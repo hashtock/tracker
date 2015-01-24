@@ -26,10 +26,6 @@ type TagCount struct {
     Count int       `bson:"count,omitempty"`
 }
 
-func (t *Tag) Hashed() string {
-    return "#" + t.Name
-}
-
 func startSession(dbUrl string) error {
     msession, err := mgo.Dial(dbUrl)
     if err != nil {
@@ -47,12 +43,15 @@ func AddTagsToTrack(hashtags []string) error {
 
     lsession := session.Copy()
     col := lsession.DB(DATABASE).C(TAG_COLLECTION)
-    tags := make([]interface{}, len(hashtags))
-    for i, tagName := range hashtags {
-        tags[i] = Tag{Name: tagName}
+
+    for _, tagName := range hashtags {
+        tag := Tag{Name: tagName}
+        if _, err := col.Upsert(tag, tag); err != nil {
+            return err
+        }
     }
 
-    return col.Insert(tags...)
+    return nil
 }
 
 func AddTagCounts(tagCounts []TagCount) error {
