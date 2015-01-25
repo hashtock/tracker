@@ -1,4 +1,4 @@
-package main
+package listener
 
 import (
     "log"
@@ -6,9 +6,11 @@ import (
     "time"
 
     "github.com/ChimeraCoder/anaconda"
+
+    "github.com/hashtock/tracker/conf"
 )
 
-func getApi(twAuth auth) *anaconda.TwitterApi {
+func getApi(twAuth conf.Auth) *anaconda.TwitterApi {
     anaconda.SetConsumerKey(twAuth.ConsumerKey)
     anaconda.SetConsumerSecret(twAuth.SecretKey)
     return anaconda.NewTwitterApi(twAuth.AccessToken, twAuth.AccessTokenSecret)
@@ -33,7 +35,7 @@ func getTagStream(api *anaconda.TwitterApi, tags []string) anaconda.Stream {
     return stream
 }
 
-func Listen(tags []string, timeout time.Duration, twAuth auth) (counts map[string]int) {
+func Listen(tags []string, timeout time.Duration, twAuth conf.Auth) (counts map[string]int) {
     api := getApi(twAuth)
     hashedTags := tagsToTrack(tags)
     stream := getTagStream(api, hashedTags)

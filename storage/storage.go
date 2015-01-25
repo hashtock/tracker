@@ -1,11 +1,14 @@
-package main
+package storage
 
 import (
     "fmt"
+    "log"
     "time"
 
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
+
+    "github.com/hashtock/tracker/conf"
 )
 
 const (
@@ -17,13 +20,21 @@ const (
 var session *mgo.Session = nil
 
 type Tag struct {
-    Name string `bson:"name,omitempty"`
+    Name string `bson:"name,omitempty" json:"name,omitempty"`
 }
 
 type TagCount struct {
-    Name  string    `bson:"name,omitempty"`
-    Date  time.Time `bson:"date,omitempty"`
-    Count int       `bson:"count,omitempty"`
+    Name  string    `bson:"name,omitempty" json:"name,omitempty"`
+    Date  time.Time `bson:"date,omitempty" json:"-"`
+    Count int       `bson:"count,omitempty" json:"count,omitempty"`
+}
+
+func init() {
+    cfg := conf.GetConfig()
+
+    if err := startSession(cfg.General.DB); err != nil {
+        log.Fatalln("Could not connect to DB.", err.Error())
+    }
 }
 
 func startSession(dbUrl string) error {
@@ -74,16 +85,31 @@ func GetTagsToTrack() (tags []Tag) {
     return
 }
 
-func GetTagCountFor(delta time.Duration) []TagCount {
+func GetTagCountForLast(delta time.Duration) []TagCount {
     since := time.Now().Add(-delta)
 
-    pipeline := []bson.M{
-        bson.M{
-            "$match": bson.M{
-                "count": bson.M{"$gt": 0},
-                "date":  bson.M{"$gt": since},
-            },
+    return GetTagCount(since, time.Time{})
+}
+
+func GetTagCount(since, until time.Time) []TagCount {
+    query := bson.M{
+        "count": bson.M{"$gt": 0},
+        "date": bson.M{
+            "$gte": since,
+            "$lt":  until,
         },
+    }
+
+    if since.IsZero() && until.IsZero() {
+        delete(query, "date")
+    } else if since.IsZero() {
+        delete(query["date"].(bson.M), "$gte")
+    } else if until.IsZero() {
+        delete(query["date"].(bson.M), "$lt")
+    }
+
+    pipeline := []bson.M{
+        bson.M{"$match": query},
 
         bson.M{
             "$group": bson.M{
