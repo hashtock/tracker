@@ -19,9 +19,7 @@ func CliApp() *cli.App {
     app.Author = "Karol Dulęba"
     app.Email = "mr.fuxi@gmail.com"
     app.Version = "0.1"
-    app.Action = func(c *cli.Context) {
-        cli.ShowAppHelp(c)
-    }
+    app.Action = cmdWebApi
 
     app.Commands = []cli.Command{
         {
