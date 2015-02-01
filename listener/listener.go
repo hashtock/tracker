@@ -57,12 +57,14 @@ func Listen(tags []string, timeout time.Duration, update time.Duration, twAuth c
         }
     }()
 
-    go func() {
-        time.Sleep(time.Second * timeout)
-        close(stopUpdates)
-        stream.Close()
-        counts <- counter.getDataAndClear()
-    }()
+    if timeout > 0 {
+        go func() {
+            time.Sleep(time.Second * timeout)
+            close(stopUpdates)
+            stream.Close()
+            counts <- counter.getDataAndClear()
+        }()
+    }
 
     tagsMap := make(map[string]bool)
     for _, tag := range tags {
