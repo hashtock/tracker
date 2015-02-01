@@ -17,8 +17,9 @@ type Auth struct {
 type Config struct {
     Auth    Auth
     General struct {
-        Timeout time.Duration
-        DB      string
+        Timeout    time.Duration
+        UpdateTime time.Duration
+        DB         string
     }
 }
 

@@ -77,20 +77,26 @@ func cmdListen(ctx *cli.Context) {
     for i, tag := range tags {
         tagNames[i] = tag.Name
     }
-    countMap := listener.Listen(tagNames, cfg.General.Timeout, cfg.Auth)
-    tc := make([]storage.TagCount, 0, len(countMap))
 
-    for tagName, count := range countMap {
-        tc = append(tc, storage.TagCount{
-            Name:  tagName,
-            Count: count,
-            Date:  now,
-        })
+    countCh := listener.Listen(tagNames, cfg.General.Timeout, cfg.General.UpdateTime*time.Second, cfg.Auth)
+
+    for countMap := range countCh {
+        fmt.Println("Data:", countMap)
+        tc := make([]storage.TagCount, 0, len(countMap))
+
+        for tagName, count := range countMap {
+            tc = append(tc, storage.TagCount{
+                Name:  tagName,
+                Count: count,
+                Date:  now,
+            })
+        }
+
+        if err := storage.AddTagCounts(tc); err != nil {
+            fmt.Println("Could not store tag counts.", err.Error())
+        }
     }
 
-    if err := storage.AddTagCounts(tc); err != nil {
-        fmt.Println("Could not store tag counts.", err.Error())
-    }
     fmt.Println("Done")
 }
 

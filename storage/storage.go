@@ -66,6 +66,10 @@ func AddTagsToTrack(hashtags []string) error {
 }
 
 func AddTagCounts(tagCounts []TagCount) error {
+    if len(tagCounts) == 0 {
+        return nil
+    }
+
     lsession := session.Copy()
     col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
 

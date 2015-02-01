@@ -35,34 +35,55 @@ func getTagStream(api *anaconda.TwitterApi, tags []string) anaconda.Stream {
     return stream
 }
 
-func Listen(tags []string, timeout time.Duration, twAuth conf.Auth) (counts map[string]int) {
+func Listen(tags []string, timeout time.Duration, update time.Duration, twAuth conf.Auth) (counts chan map[string]int) {
     api := getApi(twAuth)
     hashedTags := tagsToTrack(tags)
     stream := getTagStream(api, hashedTags)
+    counter := newCounter()
+
+    counts = make(chan map[string]int, 0)
+
+    stopUpdates := make(chan struct{})
+    go func() {
+        timer := time.NewTicker(update)
+        for {
+            select {
+            case <-timer.C:
+                counts <- counter.getDataAndClear()
+            case <-stopUpdates:
+                timer.Stop()
+                return
+            }
+        }
+    }()
 
     go func() {
         time.Sleep(time.Second * timeout)
-        close(stream.C)
+        close(stopUpdates)
+        stream.Close()
+        counts <- counter.getDataAndClear()
     }()
 
-    counts = make(map[string]int)
+    tagsMap := make(map[string]bool)
     for _, tag := range tags {
-        counts[tag] = 0
+        tagsMap[tag] = true
     }
 
-    for msg := range stream.C {
-        tweet, ok := msg.(anaconda.Tweet)
-        if !ok {
-            continue
-        }
+    go func() {
+        for msg := range stream.C {
+            tweet, ok := msg.(anaconda.Tweet)
+            if !ok {
+                continue
+            }
 
-        tags := tweet.Entities.Hashtags
-        for _, tag := range tags {
-            if _, ok := counts[tag.Text]; ok {
-                counts[tag.Text]++
+            tags := tweet.Entities.Hashtags
+            for _, tag := range tags {
+                if _, ok := tagsMap[tag.Text]; ok {
+                    counter.incCount(tag.Text, 1)
+                }
             }
         }
-    }
+    }()
 
-    return
+    return counts
 }
