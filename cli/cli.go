@@ -69,7 +69,6 @@ func CliApp() *cli.App {
 }
 
 func cmdListen(ctx *cli.Context) {
-    now := time.Now()
     cfg := conf.GetConfig()
 
     tags := storage.GetTagsToTrack()
@@ -81,6 +80,7 @@ func cmdListen(ctx *cli.Context) {
     countCh := listener.Listen(tagNames, cfg.General.Timeout, cfg.General.UpdateTime*time.Second, cfg.Auth)
 
     for countMap := range countCh {
+        now := time.Now()
         fmt.Println("Data:", countMap)
         tc := make([]storage.TagCount, 0, len(countMap))
 
