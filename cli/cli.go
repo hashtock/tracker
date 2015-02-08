@@ -19,6 +19,9 @@ func CliApp() *cli.App {
     app.Author = "Karol Dulęba"
     app.Email = "mr.fuxi@gmail.com"
     app.Version = "0.1"
+    app.Flags = []cli.Flag{
+        cli.BoolFlag{Name: "verbose", Usage: "be more verbose"},
+    }
     app.Action = cmdWebApi
 
     app.Commands = []cli.Command{
@@ -75,11 +78,13 @@ func cmdListen(ctx *cli.Context) {
         tagNames[i] = tag.Name
     }
 
-    countCh := listener.Listen(tagNames, cfg.General.Timeout, cfg.General.UpdateTime*time.Second, cfg.Auth)
+    countCh := listener.Listen(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
 
     for countMap := range countCh {
-        now := time.Now()
-        fmt.Println("Data:", countMap)
+        now := time.Now().Truncate(cfg.General.SampingTimeD())
+        if ctx.GlobalBool("verbose") {
+            fmt.Printf("Time: %v\tData: %v\n", now, countMap)
+        }
         tc := make([]storage.TagCount, 0, len(countMap))
 
         for tagName, count := range countMap {
@@ -94,8 +99,6 @@ func cmdListen(ctx *cli.Context) {
             fmt.Println("Could not store tag counts.", err.Error())
         }
     }
-
-    fmt.Println("Done")
 }
 
 func cmdListTags(ctx *cli.Context) {
@@ -150,7 +153,7 @@ func cmdClearCounts(ctx *cli.Context) {
 
 func cmdWebApi(ctx *cli.Context) {
     cfg := conf.GetConfig()
-    cfg.General.Timeout = 0 // No timeout
+    cfg.General.Timeout = "0" // No timeout
     go cmdListen(nil)
 
     webapi.RunWebApi()

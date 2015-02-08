@@ -53,6 +53,7 @@ func AddTagsToTrack(hashtags []string) error {
     }
 
     lsession := session.Copy()
+    defer lsession.Close()
     col := lsession.DB(DATABASE).C(TAG_COLLECTION)
 
     for _, tagName := range hashtags {
@@ -71,18 +72,32 @@ func AddTagCounts(tagCounts []TagCount) error {
     }
 
     lsession := session.Copy()
+    defer lsession.Close()
     col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
 
-    tagCountsInt := make([]interface{}, len(tagCounts))
-    for i, tag := range tagCounts {
-        tagCountsInt[i] = tag
+    var lastErr error = nil
+    for _, tag := range tagCounts {
+        selector := TagCount{
+            Name: tag.Name,
+            Date: tag.Date,
+        }
+
+        update_with := bson.M{
+            "$inc": bson.M{"count": tag.Count},
+        }
+        _, err := col.Upsert(selector, update_with)
+
+        if err != nil {
+            lastErr = err
+        }
     }
 
-    return col.Insert(tagCountsInt...)
+    return lastErr
 }
 
 func GetTagsToTrack() (tags []Tag) {
     lsession := session.Copy()
+    defer lsession.Close()
     col := lsession.DB(DATABASE).C(TAG_COLLECTION)
     tags = make([]Tag, 0)
     col.Find(nil).Sort("name").All(&tags)
@@ -136,6 +151,8 @@ func GetTagCount(since, until time.Time) []TagCount {
     tagCounts := make([]TagCount, 0)
 
     lsession := session.Copy()
+    defer lsession.Close()
+
     col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
     pipe := col.Pipe(pipeline)
 
@@ -148,10 +165,14 @@ func GetTagCount(since, until time.Time) []TagCount {
 
 func DropAll() error {
     lsession := session.Copy()
+    defer lsession.Close()
+
     return lsession.DB(DATABASE).DropDatabase()
 }
 
 func DropCollection(collection string) error {
     lsession := session.Copy()
+    defer lsession.Close()
+
     return lsession.DB(DATABASE).C(collection).DropCollection()
 }
