@@ -1,7 +1,6 @@
 package listener
 
 import (
-    "log"
     "net/url"
     "time"
 
@@ -27,12 +26,7 @@ func getTagStream(api *anaconda.TwitterApi, tags []string) anaconda.Stream {
     values := make(url.Values)
     values["track"] = tags
 
-    stream, err := api.PublicStreamFilter(values)
-    if err != nil {
-        log.Fatalln("Could not get stream: %v", err.Error())
-    }
-
-    return stream
+    return api.PublicStreamFilter(values)
 }
 
 func Listen(tags []string, timeout time.Duration, update time.Duration, twAuth conf.Auth) (counts chan map[string]int) {
@@ -59,10 +53,11 @@ func Listen(tags []string, timeout time.Duration, update time.Duration, twAuth c
 
     if timeout > 0 {
         go func() {
-            time.Sleep(time.Second * timeout)
+            time.Sleep(timeout)
             close(stopUpdates)
-            stream.Close()
+            stream.Interrupt()
             counts <- counter.getDataAndClear()
+            close(counts)
         }()
     }
 

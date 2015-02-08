@@ -154,7 +154,7 @@ func cmdClearCounts(ctx *cli.Context) {
 func cmdWebApi(ctx *cli.Context) {
     cfg := conf.GetConfig()
     cfg.General.Timeout = "0" // No timeout
-    go cmdListen(nil)
+    go cmdListen(ctx)
 
     webapi.RunWebApi()
 }
