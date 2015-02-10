@@ -12,6 +12,7 @@ type Auth struct {
     SecretKey         string
     AccessToken       string
     AccessTokenSecret string
+    HMACSecret        string
 }
 
 type General struct {
