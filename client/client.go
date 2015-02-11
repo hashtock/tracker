@@ -8,6 +8,7 @@ import (
     _ "crypto/sha1"
     "encoding/base64"
     "encoding/json"
+    "fmt"
     "io"
     "io/ioutil"
     "log"
@@ -49,6 +50,32 @@ func (t *Tracker) GetTagList() (tags []storage.Tag, err error) {
         log.Fatalln(err)
     }
 
+    return
+}
+
+func (t *Tracker) GetTagCounts(duration time.Duration) (counts []storage.TagCount, err error) {
+    uri := fmt.Sprintf("/api/counts/%s/", duration)
+    res, lerr := t.doSignedRequest("GET", uri)
+    if lerr != nil {
+        err = lerr
+        return
+    }
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    res.Body.Close()
+
+    if err := json.Unmarshal(body, &counts); err != nil {
+        log.Fatalln(err)
+    }
+    return
+}
+
+func (t *Tracker) AddTag(tag string) (err error) {
+    uri := fmt.Sprintf("/api/tag/%s/", tag)
+    _, err = t.doSignedRequest("PUT", uri)
     return
 }
 
