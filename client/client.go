@@ -7,12 +7,15 @@ import (
     "crypto/md5"
     _ "crypto/sha1"
     "encoding/base64"
+    "encoding/json"
     "io"
     "io/ioutil"
     "log"
     "net/http"
     "net/url"
     "time"
+
+    "github.com/hashtock/tracker/storage"
 )
 
 type Tracker struct {
@@ -29,17 +32,23 @@ func NewTracker(secret string, host string) Tracker {
     }
 }
 
-func (t *Tracker) GetTagList() (tags []string, err error) {
+func (t *Tracker) GetTagList() (tags []storage.Tag, err error) {
     res, lerr := t.doSignedRequest("GET", "/api/tag/")
     if lerr != nil {
         err = lerr
         return
     }
 
-    log.Println("Status:", res.Status)
     body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        log.Fatalln(err)
+    }
     res.Body.Close()
-    log.Println("Body:", string(body))
+
+    if err := json.Unmarshal(body, &tags); err != nil {
+        log.Fatalln(err)
+    }
+
     return
 }
 
