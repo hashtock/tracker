@@ -110,6 +110,40 @@ func GetTagCountForLast(delta time.Duration) []TagCount {
     return GetTagCount(since, time.Time{})
 }
 
+func GetTagDetailedCountForLast(delta time.Duration) []TagCount {
+    since := time.Now().Add(-delta)
+
+    return GetTagCountDetailed(since, time.Time{})
+}
+
+func GetTagCountDetailed(since, until time.Time) []TagCount {
+    query := bson.M{
+        "count": bson.M{"$gt": 0},
+        "date": bson.M{
+            "$gte": since,
+            "$lt":  until,
+        },
+    }
+
+    if since.IsZero() && until.IsZero() {
+        delete(query, "date")
+    } else if since.IsZero() {
+        delete(query["date"].(bson.M), "$gte")
+    } else if until.IsZero() {
+        delete(query["date"].(bson.M), "$lt")
+    }
+
+    tagCounts := make([]TagCount, 0)
+
+    lsession := session.Copy()
+    defer lsession.Close()
+
+    col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
+    col.Find(query).Sort("name", "date").All(&tagCounts)
+
+    return tagCounts
+}
+
 func GetTagCount(since, until time.Time) []TagCount {
     query := bson.M{
         "count": bson.M{"$gt": 0},

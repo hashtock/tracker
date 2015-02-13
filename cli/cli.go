@@ -46,8 +46,14 @@ func CliApp() *cli.App {
         {
             Name:      "counts",
             ShortName: "c",
-            Usage:     "list counts for last hour",
+            Usage:     "list counts for last hour - sum",
             Action:    cmdListTagCounts,
+        },
+        {
+            Name:      "counts detailed",
+            ShortName: "cd",
+            Usage:     "list counts for last hour - all data points",
+            Action:    cmdListTagCountsDetails,
         },
         {
             Name:      "add",
@@ -126,6 +132,20 @@ func cmdListTagCounts(ctx *cli.Context) {
     fmt.Println("Counts for last hour:")
     for _, tag := range tagCounts {
         fmt.Printf("%v - %v\n", tag.Name, tag.Count)
+    }
+}
+
+func cmdListTagCountsDetails(ctx *cli.Context) {
+    tagCounts := storage.GetTagDetailedCountForLast(time.Hour * 1)
+
+    if len(tagCounts) == 0 {
+        fmt.Println("No tag counts in the system")
+        return
+    }
+
+    fmt.Println("Detailed counts for last hour:")
+    for _, tag := range tagCounts {
+        fmt.Printf("%v - %v - %v\n", tag.Name, tag.Date, tag.Count)
     }
 }
 
