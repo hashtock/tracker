@@ -43,3 +43,27 @@ func countForDuration(params martini.Params, r render.Render) {
     counts := storage.GetTagCountForLast(duration)
     r.JSON(http.StatusOK, counts)
 }
+
+func countDetailsLastDay(r render.Render) {
+    today := time.Now().Truncate(time.Hour * 24)
+    yesterday := today.Add(-time.Hour * 24)
+
+    counts := storage.GetTagCountDetailed(yesterday, today)
+    r.JSON(http.StatusOK, counts)
+}
+
+func countDetailsForDuration(params martini.Params, r render.Render) {
+    duration_str, ok := params["duration"]
+    if !ok {
+        duration_str = "24h"
+    }
+
+    duration, err := time.ParseDuration(duration_str)
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
+    counts := storage.GetTagDetailedCountForLast(duration)
+    r.JSON(http.StatusOK, counts)
+}

@@ -24,5 +24,10 @@ func RunWebApi() {
         r.Get("/", countLastDay)
         r.Get("/:duration/", countForDuration)
     })
+    m.Group("/api/trends", func(r martini.Router) {
+        r.Get("/", countDetailsLastDay)
+        r.Get("/:duration/", countDetailsForDuration)
+    })
+
     m.Run()
 }

@@ -79,6 +79,26 @@ func (t *Tracker) AddTag(tag string) (err error) {
     return
 }
 
+func (t *Tracker) GetTagTrends(duration time.Duration) (trends []storage.TagCountTrend, err error) {
+    uri := fmt.Sprintf("/api/trends/%s/", duration)
+    res, lerr := t.doSignedRequest("GET", uri)
+    if lerr != nil {
+        err = lerr
+        return
+    }
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    res.Body.Close()
+
+    if err := json.Unmarshal(body, &trends); err != nil {
+        log.Fatalln(err)
+    }
+    return
+}
+
 func (t Tracker) doSignedRequest(method string, path string) (*http.Response, error) {
     url := url.URL{
         Scheme: "http",
@@ -102,8 +122,6 @@ func (t Tracker) doSignedRequest(method string, path string) (*http.Response, er
     req.Header.Add("Date", time.Now().Format(time.ANSIC))
     sig := "HashTock tracker:" + t.generateSignature(req)
     req.Header.Add("Authorization", sig)
-
-    log.Println("Sig:", sig)
 
     return t.Client.Do(req)
 }

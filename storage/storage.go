@@ -29,6 +29,16 @@ type TagCount struct {
     Count int       `bson:"count,omitempty" json:"count,omitempty"`
 }
 
+type Count struct {
+    Date  time.Time `bson:"date,omitempty" json:"date"`
+    Count int       `bson:"count,omitempty" json:"count"`
+}
+
+type TagCountTrend struct {
+    Name   string  `bson:"name,omitempty" json:"name,omitempty"`
+    Counts []Count `bson:"counts,omitempty" json:"counts"`
+}
+
 func init() {
     cfg := conf.GetConfig()
 
@@ -110,13 +120,13 @@ func GetTagCountForLast(delta time.Duration) []TagCount {
     return GetTagCount(since, time.Time{})
 }
 
-func GetTagDetailedCountForLast(delta time.Duration) []TagCount {
+func GetTagDetailedCountForLast(delta time.Duration) []TagCountTrend {
     since := time.Now().Add(-delta)
 
     return GetTagCountDetailed(since, time.Time{})
 }
 
-func GetTagCountDetailed(since, until time.Time) []TagCount {
+func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
     query := bson.M{
         "count": bson.M{"$gt": 0},
         "date": bson.M{
@@ -133,13 +143,45 @@ func GetTagCountDetailed(since, until time.Time) []TagCount {
         delete(query["date"].(bson.M), "$lt")
     }
 
-    tagCounts := make([]TagCount, 0)
+    pipeline := []bson.M{
+        bson.M{"$match": query},
+
+        bson.M{"$sort": bson.M{"date": 1}},
+
+        bson.M{
+            "$group": bson.M{
+                "_id": "$name",
+                "counts": bson.M{
+                    "$push": bson.M{
+                        "date":  "$date",
+                        "count": "$count",
+                    },
+                },
+            },
+        },
+
+        bson.M{"$sort": bson.M{"_id": 1}},
+
+        bson.M{
+            "$project": bson.M{
+                "_id":    0,
+                "name":   "$_id",
+                "counts": 1,
+            },
+        },
+    }
+
+    tagCounts := make([]TagCountTrend, 0)
 
     lsession := session.Copy()
     defer lsession.Close()
 
     col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
-    col.Find(query).Sort("name", "date").All(&tagCounts)
+    pipe := col.Pipe(pipeline)
+
+    if err := pipe.All(&tagCounts); err != nil {
+        fmt.Println("Could not count tags.", err.Error())
+    }
 
     return tagCounts
 }

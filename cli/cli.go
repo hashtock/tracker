@@ -136,16 +136,19 @@ func cmdListTagCounts(ctx *cli.Context) {
 }
 
 func cmdListTagCountsDetails(ctx *cli.Context) {
-    tagCounts := storage.GetTagDetailedCountForLast(time.Hour * 1)
+    tagCountTrend := storage.GetTagDetailedCountForLast(time.Hour * 1)
 
-    if len(tagCounts) == 0 {
+    if len(tagCountTrend) == 0 {
         fmt.Println("No tag counts in the system")
         return
     }
 
     fmt.Println("Detailed counts for last hour:")
-    for _, tag := range tagCounts {
-        fmt.Printf("%v - %v - %v\n", tag.Name, tag.Date, tag.Count)
+    for _, tag := range tagCountTrend {
+        fmt.Println(tag.Name)
+        for _, datapoint := range tag.Counts {
+            fmt.Printf("\t%v - %v\n", datapoint.Date, datapoint.Count)
+        }
     }
 }
 
