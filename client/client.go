@@ -16,6 +16,7 @@ import (
     "net/url"
     "time"
 
+    "github.com/hashtock/tracker/conf"
     "github.com/hashtock/tracker/storage"
 )
 
@@ -25,10 +26,10 @@ type Tracker struct {
     Client     *http.Client
 }
 
-func NewTracker(secret string, host string) Tracker {
-    return Tracker{
-        HMACSecret: secret,
-        Host:       host,
+func NewTracker(conf conf.RemoteConfig) *Tracker {
+    return &Tracker{
+        HMACSecret: conf.HMACSecret,
+        Host:       conf.URL,
         Client:     http.DefaultClient,
     }
 }

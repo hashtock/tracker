@@ -2,6 +2,7 @@ package conf
 
 import (
     "log"
+    "os"
     "time"
 
     "code.google.com/p/gcfg"
@@ -27,7 +28,23 @@ type Config struct {
     General General
 }
 
+type RemoteConfig struct {
+    URL        string
+    HMACSecret string
+}
+
+type RemoteConfigs map[string]RemoteConfig
+
 var cfg *Config = nil
+var rcfgs RemoteConfigs = nil
+
+func (r RemoteConfigs) names() []string {
+    names := make([]string, 0, len(r))
+    for name := range r {
+        names = append(names, name)
+    }
+    return names
+}
 
 func loadConfig() {
     if cfg == nil {
@@ -52,12 +69,58 @@ func loadConfig() {
     cfg.General.validate()
 }
 
+func loadRemoteConfigs() {
+    rcfgs = make(RemoteConfigs, 0)
+
+    example_config := `[remote "host1"]
+URL = "www.tracker.com:80"
+HMACSecret = "shared secret with host1"
+    `
+
+    tmp_rcfgs := struct {
+        Remote map[string]*RemoteConfig
+    }{}
+
+    err := gcfg.ReadFileInto(&tmp_rcfgs, "remotes.ini")
+    if err != nil {
+        if os.IsNotExist(err) {
+            log.Fatalf("Could not find remote tracker configuration. Expected remotes.ini with content:\n%v", example_config)
+        } else {
+            log.Fatalln("Remote config error:", err.Error())
+        }
+    }
+
+    for key, config := range tmp_rcfgs.Remote {
+        rcfgs[key] = *config
+    }
+}
+
 func GetConfig() *Config {
     if cfg == nil {
         loadConfig()
     }
 
     return cfg
+}
+
+func ListRemoteConfigs() []string {
+    if rcfgs == nil {
+        loadRemoteConfigs()
+    }
+
+    return rcfgs.names()
+}
+
+func GetRemoteConfig(remote string) RemoteConfig {
+    if rcfgs == nil {
+        loadRemoteConfigs()
+    }
+
+    config, ok := rcfgs[remote]
+    if !ok {
+        log.Fatalf("Could not find config configuration for: %v. Available configurations: %v", remote, rcfgs.names())
+    }
+    return config
 }
 
 func parseOrDie(duration_str string) time.Duration {
