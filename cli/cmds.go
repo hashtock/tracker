@@ -6,11 +6,12 @@ import (
 
     "github.com/codegangsta/cli"
 
+    "github.com/hashtock/tracker/core"
     "github.com/hashtock/tracker/storage"
 )
 
 func cmdListTags(ctx *cli.Context) {
-    var tags []storage.Tag
+    var tags []core.Tag
     var err error
 
     if tracker := getRemoteClient(ctx); tracker != nil {
@@ -34,7 +35,7 @@ func cmdListTags(ctx *cli.Context) {
 }
 
 func cmdListTagCounts(ctx *cli.Context) {
-    var tagCounts []storage.TagCount
+    var tagCounts []core.TagCount
     var err error
 
     timeSpan := getDuration(ctx)
@@ -60,7 +61,7 @@ func cmdListTagCounts(ctx *cli.Context) {
 }
 
 func cmdListTagCountsDetails(ctx *cli.Context) {
-    var tagCountTrend []storage.TagCountTrend
+    var tagCountTrend []core.TagCountTrend
     var err error
 
     timeSpan := getDuration(ctx)

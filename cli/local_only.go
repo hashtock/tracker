@@ -7,6 +7,7 @@ import (
     "github.com/codegangsta/cli"
 
     "github.com/hashtock/tracker/conf"
+    "github.com/hashtock/tracker/core"
     "github.com/hashtock/tracker/listener"
     "github.com/hashtock/tracker/storage"
     "github.com/hashtock/tracker/webapi"
@@ -28,10 +29,10 @@ func cmdListen(ctx *cli.Context) {
         if ctx.GlobalBool("verbose") {
             fmt.Printf("Time: %v\tData: %v\n", now, countMap)
         }
-        tc := make([]storage.TagCount, 0, len(countMap))
+        tc := make([]core.TagCount, 0, len(countMap))
 
         for tagName, count := range countMap {
-            tc = append(tc, storage.TagCount{
+            tc = append(tc, core.TagCount{
                 Name:  tagName,
                 Count: count,
                 Date:  now,

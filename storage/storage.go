@@ -9,6 +9,7 @@ import (
     "gopkg.in/mgo.v2/bson"
 
     "github.com/hashtock/tracker/conf"
+    "github.com/hashtock/tracker/core"
 )
 
 const (
@@ -18,26 +19,6 @@ const (
 )
 
 var session *mgo.Session = nil
-
-type Tag struct {
-    Name string `bson:"name,omitempty" json:"name,omitempty"`
-}
-
-type TagCount struct {
-    Name  string    `bson:"name,omitempty" json:"name,omitempty"`
-    Date  time.Time `bson:"date,omitempty" json:"-"`
-    Count int       `bson:"count,omitempty" json:"count,omitempty"`
-}
-
-type Count struct {
-    Date  time.Time `bson:"date,omitempty" json:"date"`
-    Count int       `bson:"count,omitempty" json:"count"`
-}
-
-type TagCountTrend struct {
-    Name   string  `bson:"name,omitempty" json:"name,omitempty"`
-    Counts []Count `bson:"counts,omitempty" json:"counts"`
-}
 
 func init() {
     cfg := conf.GetConfig()
@@ -67,7 +48,7 @@ func AddTagsToTrack(hashtags []string) error {
     col := lsession.DB(DATABASE).C(TAG_COLLECTION)
 
     for _, tagName := range hashtags {
-        tag := Tag{Name: tagName}
+        tag := core.Tag{Name: tagName}
         if _, err := col.Upsert(tag, tag); err != nil {
             return err
         }
@@ -76,7 +57,7 @@ func AddTagsToTrack(hashtags []string) error {
     return nil
 }
 
-func AddTagCounts(tagCounts []TagCount) error {
+func AddTagCounts(tagCounts []core.TagCount) error {
     if len(tagCounts) == 0 {
         return nil
     }
@@ -87,7 +68,7 @@ func AddTagCounts(tagCounts []TagCount) error {
 
     var lastErr error = nil
     for _, tag := range tagCounts {
-        selector := TagCount{
+        selector := core.TagCount{
             Name: tag.Name,
             Date: tag.Date,
         }
@@ -105,28 +86,28 @@ func AddTagCounts(tagCounts []TagCount) error {
     return lastErr
 }
 
-func GetTagsToTrack() (tags []Tag) {
+func GetTagsToTrack() (tags []core.Tag) {
     lsession := session.Copy()
     defer lsession.Close()
     col := lsession.DB(DATABASE).C(TAG_COLLECTION)
-    tags = make([]Tag, 0)
+    tags = make([]core.Tag, 0)
     col.Find(nil).Sort("name").All(&tags)
     return
 }
 
-func GetTagCountForLast(delta time.Duration) []TagCount {
+func GetTagCountForLast(delta time.Duration) []core.TagCount {
     since := time.Now().Add(-delta)
 
     return GetTagCount(since, time.Time{})
 }
 
-func GetTagDetailedCountForLast(delta time.Duration) []TagCountTrend {
+func GetTagDetailedCountForLast(delta time.Duration) []core.TagCountTrend {
     since := time.Now().Add(-delta)
 
     return GetTagCountDetailed(since, time.Time{})
 }
 
-func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
+func GetTagCountDetailed(since, until time.Time) []core.TagCountTrend {
     query := bson.M{
         "count": bson.M{"$gt": 0},
         "date": bson.M{
@@ -171,7 +152,7 @@ func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
         },
     }
 
-    tagCounts := make([]TagCountTrend, 0)
+    tagCounts := make([]core.TagCountTrend, 0)
 
     lsession := session.Copy()
     defer lsession.Close()
@@ -186,7 +167,7 @@ func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
     return tagCounts
 }
 
-func GetTagCount(since, until time.Time) []TagCount {
+func GetTagCount(since, until time.Time) []core.TagCount {
     query := bson.M{
         "count": bson.M{"$gt": 0},
         "date": bson.M{
@@ -224,7 +205,7 @@ func GetTagCount(since, until time.Time) []TagCount {
         },
     }
 
-    tagCounts := make([]TagCount, 0)
+    tagCounts := make([]core.TagCount, 0)
 
     lsession := session.Copy()
     defer lsession.Close()
