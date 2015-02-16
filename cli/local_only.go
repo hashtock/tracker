@@ -2,6 +2,7 @@ package cli
 
 import (
     "fmt"
+    "log"
     "time"
 
     "github.com/codegangsta/cli"
@@ -9,14 +10,18 @@ import (
     "github.com/hashtock/tracker/conf"
     "github.com/hashtock/tracker/core"
     "github.com/hashtock/tracker/listener"
-    "github.com/hashtock/tracker/storage"
     "github.com/hashtock/tracker/webapi"
 )
 
 func cmdListen(ctx *cli.Context) {
     cfg := conf.GetConfig()
+    counter := getCounter(ctx)
 
-    tags := storage.GetTagsToTrack()
+    tags, err := counter.Tags()
+    if err != nil {
+        log.Fatalln(err)
+    }
+
     tagNames := make([]string, len(tags))
     for i, tag := range tags {
         tagNames[i] = tag.Name
@@ -39,30 +44,35 @@ func cmdListen(ctx *cli.Context) {
             })
         }
 
-        if err := storage.AddTagCounts(tc); err != nil {
+        if err := counter.AddTagCounts(tc); err != nil {
             fmt.Println("Could not store tag counts.", err.Error())
         }
     }
 }
 
 func cmdWebApi(ctx *cli.Context) {
+    counter := getCounterRW(ctx)
     cfg := conf.GetConfig()
     cfg.General.Timeout = "0" // No timeout
     go cmdListen(ctx)
 
-    webapi.RunWebApi()
+    webapi.RunWebApi(counter)
 }
 
 func cmdClearAll(ctx *cli.Context) {
-    if err := storage.DropAll(); err != nil {
-        fmt.Println("Could not drop all data.", err.Error())
+    counter := getCounter(ctx)
+
+    if err := counter.RemoveAll(); err != nil {
+        log.Fatalln("Could not remove the data: ", err)
     }
     fmt.Println("Done. Nothing left...")
 }
 
 func cmdClearCounts(ctx *cli.Context) {
-    if err := storage.DropCollection(storage.TAG_COUNT_COLLECTION); err != nil {
-        fmt.Println("Could not drop counts.", err.Error())
+    counter := getCounter(ctx)
+
+    if err := counter.RemoveCounts(); err != nil {
+        log.Println("Could not remove counts.", err)
     }
     fmt.Println("Done. Counts cleared tags are still in place")
 }

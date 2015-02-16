@@ -5,9 +5,11 @@ import (
 
     "github.com/go-martini/martini"
     "github.com/martini-contrib/render"
+
+    "github.com/hashtock/tracker/core"
 )
 
-func RunWebApi() {
+func RunWebApi(counter core.CountReaderWritter) {
     hmacAuth := newVanGoh()
 
     m := martini.Classic()
@@ -16,17 +18,19 @@ func RunWebApi() {
         hmacAuth.ChainedHandler(res, req, nil)
     })
 
+    cs := counterService{counter}
+
     m.Group("/api/tag", func(r martini.Router) {
-        r.Get("/", allTags)
-        r.Put("/:name/", addTag)
+        r.Get("/", cs.allTags)
+        r.Put("/:name/", cs.addTag)
     })
     m.Group("/api/counts", func(r martini.Router) {
-        r.Get("/", countLastDay)
-        r.Get("/:duration/", countForDuration)
+        r.Get("/", cs.countForDuration)
+        r.Get("/:duration/", cs.countForDuration)
     })
     m.Group("/api/trends", func(r martini.Router) {
-        r.Get("/", countDetailsLastDay)
-        r.Get("/:duration/", countDetailsForDuration)
+        r.Get("/", cs.countDetailsForDuration)
+        r.Get("/:duration/", cs.countDetailsForDuration)
     })
 
     m.Run()

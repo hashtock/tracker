@@ -5,22 +5,14 @@ import (
     "log"
 
     "github.com/codegangsta/cli"
-
-    "github.com/hashtock/tracker/core"
-    "github.com/hashtock/tracker/storage"
 )
 
 func cmdListTags(ctx *cli.Context) {
-    var tags []core.Tag
-    var err error
+    counter := getCounterRW(ctx)
 
-    if tracker := getRemoteClient(ctx); tracker != nil {
-        tags, err = tracker.GetTagList()
-        if err != nil {
-            log.Fatalln(err)
-        }
-    } else {
-        tags = storage.GetTagsToTrack()
+    tags, err := counter.Tags()
+    if err != nil {
+        log.Fatalln(err)
     }
 
     if len(tags) == 0 {
@@ -35,22 +27,16 @@ func cmdListTags(ctx *cli.Context) {
 }
 
 func cmdListTagCounts(ctx *cli.Context) {
-    var tagCounts []core.TagCount
-    var err error
-
     timeSpan := getDuration(ctx)
+    counter := getCounterRW(ctx)
 
-    if tracker := getRemoteClient(ctx); tracker != nil {
-        tagCounts, err = tracker.GetTagCounts(timeSpan)
-        if err != nil {
-            log.Fatalln(err)
-        }
-    } else {
-        tagCounts = storage.GetTagCountForLast(timeSpan)
+    tagCounts, err := counter.CountsLast(timeSpan)
+    if err != nil {
+        log.Fatalln(err)
     }
 
     if len(tagCounts) == 0 {
-        fmt.Println("No tag counts in the system")
+        fmt.Println("No tag counts in the system for last", timeSpan)
         return
     }
 
@@ -61,22 +47,16 @@ func cmdListTagCounts(ctx *cli.Context) {
 }
 
 func cmdListTagCountsDetails(ctx *cli.Context) {
-    var tagCountTrend []core.TagCountTrend
-    var err error
-
     timeSpan := getDuration(ctx)
+    counter := getCounterRW(ctx)
 
-    if tracker := getRemoteClient(ctx); tracker != nil {
-        tagCountTrend, err = tracker.GetTagTrends(timeSpan)
-        if err != nil {
-            log.Fatalln(err)
-        }
-    } else {
-        tagCountTrend = storage.GetTagDetailedCountForLast(timeSpan)
+    tagCountTrend, err := counter.TrendsLast(timeSpan)
+    if err != nil {
+        log.Fatalln(err)
     }
 
     if len(tagCountTrend) == 0 {
-        fmt.Println("No tag counts in the system")
+        fmt.Println("No tag counts in the system for last", timeSpan)
         return
     }
 
@@ -93,16 +73,13 @@ func cmdAddTags(ctx *cli.Context) {
     var err error
 
     tags := append([]string{ctx.Args().First()}, ctx.Args().Tail()...)
+    counter := getCounterRW(ctx)
 
     fmt.Println("Tags to add:", tags)
-    if tracker := getRemoteClient(ctx); tracker != nil {
-        for _, tag := range tags {
-            if err = tracker.AddTag(tag); err != nil {
-                break
-            }
+    for _, tag := range tags {
+        if err = counter.AddTag(tag); err != nil {
+            break
         }
-    } else {
-        err = storage.AddTagsToTrack(tags)
     }
 
     if err != nil {
