@@ -8,6 +8,7 @@ import (
     _ "crypto/sha1"
     "encoding/base64"
     "encoding/json"
+    "errors"
     "fmt"
     "io"
     "io/ioutil"
@@ -109,7 +110,6 @@ func (t Tracker) doSignedRequest(method string, path string) (*http.Response, er
 
     req, err := http.NewRequest(method, url.String(), nil)
     if err != nil {
-        log.Fatalln(err)
         return nil, err
     }
 
@@ -119,12 +119,21 @@ func (t Tracker) doSignedRequest(method string, path string) (*http.Response, er
     }
 
     req.Header.Add("Content-Type", "application/json")
-    req.Header.Add("Content-MD5", string(h.Sum(nil)))
+    req.Header.Add("Content-MD5", fmt.Sprintf("%x", h.Sum(nil)))
     req.Header.Add("Date", time.Now().Format(time.ANSIC))
     sig := "HashTock tracker:" + t.generateSignature(req)
     req.Header.Add("Authorization", sig)
 
-    return t.Client.Do(req)
+    res, err := t.Client.Do(req)
+    if err != nil {
+        return nil, err
+    }
+
+    if res.StatusCode >= 400 {
+        return nil, errors.New(fmt.Sprintf("Problem with request: %s", res.Status))
+    }
+
+    return res, nil
 }
 
 func (t *Tracker) generateSignature(req *http.Request) string {
