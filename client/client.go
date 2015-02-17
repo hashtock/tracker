@@ -17,7 +17,7 @@ import (
     "time"
 
     "github.com/hashtock/tracker/conf"
-    "github.com/hashtock/tracker/storage"
+    "github.com/hashtock/tracker/core"
 )
 
 type Tracker struct {
@@ -26,15 +26,15 @@ type Tracker struct {
     Client     *http.Client
 }
 
-func NewTracker(conf conf.RemoteConfig) *Tracker {
+func NewTracker(conf conf.RemoteConfig) (*Tracker, error) {
     return &Tracker{
         HMACSecret: conf.HMACSecret,
         Host:       conf.URL,
         Client:     http.DefaultClient,
-    }
+    }, nil
 }
 
-func (t *Tracker) GetTagList() (tags []storage.Tag, err error) {
+func (t *Tracker) Tags() (tags []core.Tag, err error) {
     res, lerr := t.doSignedRequest("GET", "/api/tag/")
     if lerr != nil {
         err = lerr
@@ -54,7 +54,7 @@ func (t *Tracker) GetTagList() (tags []storage.Tag, err error) {
     return
 }
 
-func (t *Tracker) GetTagCounts(duration time.Duration) (counts []storage.TagCount, err error) {
+func (t *Tracker) CountsLast(duration time.Duration) (counts []core.TagCount, err error) {
     uri := fmt.Sprintf("/api/counts/%s/", duration)
     res, lerr := t.doSignedRequest("GET", uri)
     if lerr != nil {
@@ -80,7 +80,7 @@ func (t *Tracker) AddTag(tag string) (err error) {
     return
 }
 
-func (t *Tracker) GetTagTrends(duration time.Duration) (trends []storage.TagCountTrend, err error) {
+func (t *Tracker) TrendsLast(duration time.Duration) (trends []core.TagCountTrend, err error) {
     uri := fmt.Sprintf("/api/trends/%s/", duration)
     res, lerr := t.doSignedRequest("GET", uri)
     if lerr != nil {

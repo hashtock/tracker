@@ -1,132 +1,103 @@
 package storage
 
 import (
-    "fmt"
-    "log"
     "time"
 
     "gopkg.in/mgo.v2"
     "gopkg.in/mgo.v2/bson"
 
-    "github.com/hashtock/tracker/conf"
+    "github.com/hashtock/tracker/core"
 )
 
 const (
-    DATABASE             = "Tags"
-    TAG_COLLECTION       = "Tag"
-    TAG_COUNT_COLLECTION = "TagCount"
+    dbName                 = "Tags"
+    tagCollectionName      = "Tag"
+    tagCountCollectionName = "TagCount"
 )
 
-var session *mgo.Session = nil
-
-type Tag struct {
-    Name string `bson:"name,omitempty" json:"name,omitempty"`
+type mgoCounter struct {
+    session *mgo.Session
+    db      string
 }
 
-type TagCount struct {
-    Name  string    `bson:"name,omitempty" json:"name,omitempty"`
-    Date  time.Time `bson:"date,omitempty" json:"-"`
-    Count int       `bson:"count,omitempty" json:"count,omitempty"`
-}
-
-type Count struct {
-    Date  time.Time `bson:"date,omitempty" json:"date"`
-    Count int       `bson:"count,omitempty" json:"count"`
-}
-
-type TagCountTrend struct {
-    Name   string  `bson:"name,omitempty" json:"name,omitempty"`
-    Counts []Count `bson:"counts,omitempty" json:"counts"`
-}
-
-func init() {
-    cfg := conf.GetConfig()
-
-    if err := startSession(cfg.General.DB); err != nil {
-        log.Fatalln("Could not connect to DB.", err.Error())
-    }
-}
-
-func startSession(dbUrl string) error {
+func NewMongoCounter(dbUrl string) (*mgoCounter, error) {
     msession, err := mgo.Dial(dbUrl)
     if err != nil {
-        return err
+        return nil, err
     }
 
-    session = msession
-    return nil
+    return &mgoCounter{
+        db:      dbUrl,
+        session: msession,
+    }, nil
 }
 
-func AddTagsToTrack(hashtags []string) error {
-    if len(hashtags) == 0 {
-        return nil
-    }
-
-    lsession := session.Copy()
+func (m *mgoCounter) Tags() (tags []core.Tag, err error) {
+    lsession := m.session.Copy()
     defer lsession.Close()
-    col := lsession.DB(DATABASE).C(TAG_COLLECTION)
-
-    for _, tagName := range hashtags {
-        tag := Tag{Name: tagName}
-        if _, err := col.Upsert(tag, tag); err != nil {
-            return err
-        }
-    }
-
-    return nil
-}
-
-func AddTagCounts(tagCounts []TagCount) error {
-    if len(tagCounts) == 0 {
-        return nil
-    }
-
-    lsession := session.Copy()
-    defer lsession.Close()
-    col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
-
-    var lastErr error = nil
-    for _, tag := range tagCounts {
-        selector := TagCount{
-            Name: tag.Name,
-            Date: tag.Date,
-        }
-
-        update_with := bson.M{
-            "$inc": bson.M{"count": tag.Count},
-        }
-        _, err := col.Upsert(selector, update_with)
-
-        if err != nil {
-            lastErr = err
-        }
-    }
-
-    return lastErr
-}
-
-func GetTagsToTrack() (tags []Tag) {
-    lsession := session.Copy()
-    defer lsession.Close()
-    col := lsession.DB(DATABASE).C(TAG_COLLECTION)
-    tags = make([]Tag, 0)
+    col := lsession.DB(dbName).C(tagCollectionName)
+    tags = make([]core.Tag, 0)
     col.Find(nil).Sort("name").All(&tags)
     return
 }
 
-func GetTagCountForLast(delta time.Duration) []TagCount {
-    since := time.Now().Add(-delta)
+func (m *mgoCounter) Counts(since, until time.Time) ([]core.TagCount, error) {
+    query := bson.M{
+        "count": bson.M{"$gt": 0},
+        "date": bson.M{
+            "$gte": since,
+            "$lt":  until,
+        },
+    }
 
-    return GetTagCount(since, time.Time{})
+    if since.IsZero() && until.IsZero() {
+        delete(query, "date")
+    } else if since.IsZero() {
+        delete(query["date"].(bson.M), "$gte")
+    } else if until.IsZero() {
+        delete(query["date"].(bson.M), "$lt")
+    }
+
+    pipeline := []bson.M{
+        bson.M{"$match": query},
+
+        bson.M{
+            "$group": bson.M{
+                "_id":   "$name",
+                "count": bson.M{"$sum": "$count"},
+            },
+        },
+
+        bson.M{"$sort": bson.M{"count": -1}},
+
+        bson.M{
+            "$project": bson.M{
+                "_id":   0,
+                "name":  "$_id",
+                "count": 1,
+            },
+        },
+    }
+
+    tagCounts := make([]core.TagCount, 0)
+
+    lsession := m.session.Copy()
+    defer lsession.Close()
+
+    col := lsession.DB(dbName).C(tagCountCollectionName)
+    pipe := col.Pipe(pipeline)
+    err := pipe.All(&tagCounts)
+
+    return tagCounts, err
 }
 
-func GetTagDetailedCountForLast(delta time.Duration) []TagCountTrend {
+func (m *mgoCounter) CountsLast(delta time.Duration) ([]core.TagCount, error) {
     since := time.Now().Add(-delta)
 
-    return GetTagCountDetailed(since, time.Time{})
+    return m.Counts(since, time.Time{})
 }
 
-func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
+func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error) {
     query := bson.M{
         "count": bson.M{"$gt": 0},
         "date": bson.M{
@@ -171,84 +142,80 @@ func GetTagCountDetailed(since, until time.Time) []TagCountTrend {
         },
     }
 
-    tagCounts := make([]TagCountTrend, 0)
+    tagCounts := make([]core.TagCountTrend, 0)
 
-    lsession := session.Copy()
+    lsession := m.session.Copy()
     defer lsession.Close()
 
-    col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
+    col := lsession.DB(dbName).C(tagCountCollectionName)
     pipe := col.Pipe(pipeline)
+    err := pipe.All(&tagCounts)
 
-    if err := pipe.All(&tagCounts); err != nil {
-        fmt.Println("Could not count tags.", err.Error())
-    }
-
-    return tagCounts
+    return tagCounts, err
 }
 
-func GetTagCount(since, until time.Time) []TagCount {
-    query := bson.M{
-        "count": bson.M{"$gt": 0},
-        "date": bson.M{
-            "$gte": since,
-            "$lt":  until,
-        },
-    }
+func (m *mgoCounter) TrendsLast(delta time.Duration) ([]core.TagCountTrend, error) {
+    since := time.Now().Add(-delta)
 
-    if since.IsZero() && until.IsZero() {
-        delete(query, "date")
-    } else if since.IsZero() {
-        delete(query["date"].(bson.M), "$gte")
-    } else if until.IsZero() {
-        delete(query["date"].(bson.M), "$lt")
-    }
-
-    pipeline := []bson.M{
-        bson.M{"$match": query},
-
-        bson.M{
-            "$group": bson.M{
-                "_id":   "$name",
-                "count": bson.M{"$sum": "$count"},
-            },
-        },
-
-        bson.M{"$sort": bson.M{"count": -1}},
-
-        bson.M{
-            "$project": bson.M{
-                "_id":   0,
-                "name":  "$_id",
-                "count": 1,
-            },
-        },
-    }
-
-    tagCounts := make([]TagCount, 0)
-
-    lsession := session.Copy()
-    defer lsession.Close()
-
-    col := lsession.DB(DATABASE).C(TAG_COUNT_COLLECTION)
-    pipe := col.Pipe(pipeline)
-
-    if err := pipe.All(&tagCounts); err != nil {
-        fmt.Println("Could not count tags.", err.Error())
-    }
-
-    return tagCounts
+    return m.Trends(since, time.Time{})
 }
 
-func DropAll() error {
-    lsession := session.Copy()
-    defer lsession.Close()
+func (m *mgoCounter) AddTag(tagName string) error {
+    if tagName == "" {
+        return nil
+    }
 
-    return lsession.DB(DATABASE).DropDatabase()
+    lsession := m.session.Copy()
+    defer lsession.Close()
+    col := lsession.DB(dbName).C(tagCollectionName)
+
+    tag := core.Tag{Name: tagName}
+    if _, err := col.Upsert(tag, tag); err != nil {
+        return err
+    }
+
+    return nil
 }
 
-func DropCollection(collection string) error {
-    lsession := session.Copy()
+func (m *mgoCounter) AddTagCounts(tagCounts []core.TagCount) error {
+    if len(tagCounts) == 0 {
+        return nil
+    }
+
+    lsession := m.session.Copy()
+    defer lsession.Close()
+    col := lsession.DB(dbName).C(tagCountCollectionName)
+
+    var lastErr error = nil
+    for _, tag := range tagCounts {
+        selector := core.TagCount{
+            Name: tag.Name,
+            Date: tag.Date,
+        }
+
+        update_with := bson.M{
+            "$inc": bson.M{"count": tag.Count},
+        }
+        _, err := col.Upsert(selector, update_with)
+
+        if err != nil {
+            lastErr = err
+        }
+    }
+
+    return lastErr
+}
+
+func (m *mgoCounter) RemoveAll() error {
+    lsession := m.session.Copy()
     defer lsession.Close()
 
-    return lsession.DB(DATABASE).C(collection).DropCollection()
+    return lsession.DB(dbName).DropDatabase()
+}
+
+func (m *mgoCounter) RemoveCounts() error {
+    lsession := m.session.Copy()
+    defer lsession.Close()
+
+    return lsession.DB(dbName).C(tagCountCollectionName).DropCollection()
 }

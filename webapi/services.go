@@ -7,28 +7,32 @@ import (
     "github.com/go-martini/martini"
     "github.com/martini-contrib/render"
 
-    "github.com/hashtock/tracker/storage"
+    "github.com/hashtock/tracker/core"
 )
 
-func allTags(r render.Render) {
-    tags := storage.GetTagsToTrack()
+type counterService struct {
+    counter core.CountReaderWritter
+}
+
+func (c *counterService) allTags(r render.Render) {
+    tags, err := c.counter.Tags()
+    if err != nil {
+        r.Error(http.StatusInternalServerError)
+        return
+    }
+
     r.JSON(http.StatusOK, tags)
 }
 
-func addTag(res http.ResponseWriter, params martini.Params) {
-    storage.AddTagsToTrack([]string{params["name"]})
-    res.WriteHeader(http.StatusCreated)
+func (c *counterService) addTag(res http.ResponseWriter, params martini.Params) {
+    if err := c.counter.AddTag(params["name"]); err != nil {
+        res.WriteHeader(http.StatusInternalServerError)
+    } else {
+        res.WriteHeader(http.StatusCreated)
+    }
 }
 
-func countLastDay(r render.Render) {
-    today := time.Now().Truncate(time.Hour * 24)
-    yesterday := today.Add(-time.Hour * 24)
-
-    counts := storage.GetTagCount(yesterday, today)
-    r.JSON(http.StatusOK, counts)
-}
-
-func countForDuration(params martini.Params, r render.Render) {
+func (c *counterService) countForDuration(params martini.Params, r render.Render) {
     duration_str, ok := params["duration"]
     if !ok {
         duration_str = "24h"
@@ -40,19 +44,16 @@ func countForDuration(params martini.Params, r render.Render) {
         return
     }
 
-    counts := storage.GetTagCountForLast(duration)
+    counts, err := c.counter.CountsLast(duration)
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
     r.JSON(http.StatusOK, counts)
 }
 
-func countDetailsLastDay(r render.Render) {
-    today := time.Now().Truncate(time.Hour * 24)
-    yesterday := today.Add(-time.Hour * 24)
-
-    counts := storage.GetTagCountDetailed(yesterday, today)
-    r.JSON(http.StatusOK, counts)
-}
-
-func countDetailsForDuration(params martini.Params, r render.Render) {
+func (c *counterService) countDetailsForDuration(params martini.Params, r render.Render) {
     duration_str, ok := params["duration"]
     if !ok {
         duration_str = "24h"
@@ -64,6 +65,11 @@ func countDetailsForDuration(params martini.Params, r render.Render) {
         return
     }
 
-    counts := storage.GetTagDetailedCountForLast(duration)
+    counts, err := c.counter.TrendsLast(duration)
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
     r.JSON(http.StatusOK, counts)
 }

@@ -8,15 +8,41 @@ import (
 
     "github.com/hashtock/tracker/client"
     "github.com/hashtock/tracker/conf"
+    "github.com/hashtock/tracker/core"
+    "github.com/hashtock/tracker/storage"
 )
 
-func getRemoteClient(ctx *cli.Context) *client.Tracker {
+func getCounterRW(ctx *cli.Context) core.CountReaderWritter {
+    var counter core.CountReaderWritter
+    var err error
+
     if remote := ctx.GlobalString("remote"); remote != "" {
         remoteConfig := conf.GetRemoteConfig(remote)
-        return client.NewTracker(remoteConfig)
+        counter, err = client.NewTracker(remoteConfig)
+    } else {
+        config := conf.GetConfig()
+        counter, err = storage.NewMongoCounter(config.General.DB)
     }
 
-    return nil
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    return counter
+}
+
+func getCounter(ctx *cli.Context) core.Counter {
+    if remote := ctx.GlobalString("remote"); remote != "" {
+        log.Fatalln("No remote tracker handles available for that action")
+    }
+
+    config := conf.GetConfig()
+    counter, err := storage.NewMongoCounter(config.General.DB)
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    return counter
 }
 
 func getDuration(ctx *cli.Context) time.Duration {
