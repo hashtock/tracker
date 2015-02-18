@@ -38,6 +38,25 @@ type RemoteConfigs map[string]RemoteConfig
 var cfg *Config = nil
 var rcfgs RemoteConfigs = nil
 
+const exampleConfig = `[general]
+Timeout = 60s
+UpdateTime = 5s
+SampingTime = 15m
+DB = "mongodb://user:password@host:port/"
+
+[auth]
+ConsumerKey = "Twitter App ConsumerKey"
+SecretKey   = "Twitter App SecretKey"
+AccessToken = "Twitter account access token"
+AccessTokenSecret = "Twitter account access token secret"
+HMACSecret = "Long Random String"
+`
+
+const exampleRemoteConfig = `[remote "host1"]
+URL = "www.tracker.com:80"
+HMACSecret = "shared secret with host1"
+`
+
 func (r RemoteConfigs) names() []string {
     names := make([]string, 0, len(r))
     for name := range r {
@@ -52,18 +71,15 @@ func loadConfig() {
     }
     err := gcfg.ReadFileInto(cfg, "config.ini")
     if err != nil {
-        log.Fatalln("Config error:", err.Error())
+        if os.IsNotExist(err) {
+            log.Fatalf("Could not find remote tracker configuration. Expected config.ini with content:\n%v\n", exampleConfig)
+        } else {
+            log.Fatalln("Config error:", err.Error())
+        }
     }
 
-    example_config := `[auth]
-        ConsumerKey = "123"
-        SecretKey   = "456"
-        AccessToken = "679"
-        AccessTokenSecret = "001"
-    `
-
     if cfg.Auth.ConsumerKey == "" || cfg.Auth.SecretKey == "" || cfg.Auth.AccessToken == "" || cfg.Auth.AccessTokenSecret == "" {
-        log.Fatalln("Twitter authentication missing!\nExpect:", example_config)
+        log.Fatalln("Twitter authentication missing!\nExpect:", exampleConfig)
     }
 
     cfg.General.validate()
@@ -72,11 +88,6 @@ func loadConfig() {
 func loadRemoteConfigs() {
     rcfgs = make(RemoteConfigs, 0)
 
-    example_config := `[remote "host1"]
-URL = "www.tracker.com:80"
-HMACSecret = "shared secret with host1"
-    `
-
     tmp_rcfgs := struct {
         Remote map[string]*RemoteConfig
     }{}
@@ -84,7 +95,7 @@ HMACSecret = "shared secret with host1"
     err := gcfg.ReadFileInto(&tmp_rcfgs, "remotes.ini")
     if err != nil {
         if os.IsNotExist(err) {
-            log.Fatalf("Could not find remote tracker configuration. Expected remotes.ini with content:\n%v", example_config)
+            log.Fatalf("Could not find remote tracker configuration. Expected remotes.ini with content:\n%v\n", exampleRemoteConfig)
         } else {
             log.Fatalln("Remote config error:", err.Error())
         }
