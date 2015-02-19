@@ -9,78 +9,114 @@ import (
     "github.com/hashtock/tracker/conf"
 )
 
-func getApi(twAuth conf.Auth) *anaconda.TwitterApi {
-    anaconda.SetConsumerKey(twAuth.ConsumerKey)
-    anaconda.SetConsumerSecret(twAuth.SecretKey)
-    return anaconda.NewTwitterApi(twAuth.AccessToken, twAuth.AccessTokenSecret)
+type Listener interface {
+    Listen() chan map[string]int
 }
 
-func tagsToTrack(tags []string) (hashedTags []string) {
-    for _, tag := range tags {
-        hashedTags = append(hashedTags, "#"+tag)
+type twitterListener struct {
+    timeout time.Duration
+    update  time.Duration
+    auth    conf.Auth
+    tags    []string
+
+    api         *anaconda.TwitterApi
+    stream      anaconda.Stream
+    counter     *tagCounter
+    dataChannel chan map[string]int
+
+    timeOutCh chan bool
+}
+
+func NewTwitterListener(tags []string, timeout time.Duration, update time.Duration, auth conf.Auth) Listener {
+    listener := &twitterListener{
+        timeout: timeout,
+        update:  update,
+        auth:    auth,
+        tags:    tags,
     }
-    return hashedTags
+
+    listener.counter = newCounter()
+    listener.dataChannel = make(chan map[string]int, 0)
+
+    listener.timeOutCh = make(chan bool)
+
+    return listener
 }
 
-func getTagStream(api *anaconda.TwitterApi, tags []string) anaconda.Stream {
+func (t *twitterListener) connectToApi() {
+    anaconda.SetConsumerKey(t.auth.ConsumerKey)
+    anaconda.SetConsumerSecret(t.auth.SecretKey)
+    t.api = anaconda.NewTwitterApi(t.auth.AccessToken, t.auth.AccessTokenSecret)
+}
+
+func (t *twitterListener) startTagStream() {
+    hashedTags := make([]string, len(t.tags))
+    for i, tag := range t.tags {
+        hashedTags[i] = "#" + tag
+    }
+
     values := make(url.Values)
-    values["track"] = tags
+    values["track"] = hashedTags
 
-    return api.PublicStreamFilter(values)
-}
-
-func Listen(tags []string, timeout time.Duration, update time.Duration, twAuth conf.Auth) (counts chan map[string]int) {
-    api := getApi(twAuth)
-    hashedTags := tagsToTrack(tags)
-    stream := getTagStream(api, hashedTags)
-    counter := newCounter()
-
-    counts = make(chan map[string]int, 0)
-
-    stopUpdates := make(chan struct{})
-    go func() {
-        timer := time.NewTicker(update)
-        for {
-            select {
-            case <-timer.C:
-                counts <- counter.getDataAndClear()
-            case <-stopUpdates:
-                timer.Stop()
-                return
-            }
-        }
-    }()
-
-    if timeout > 0 {
-        go func() {
-            time.Sleep(timeout)
-            close(stopUpdates)
-            stream.Interrupt()
-            counts <- counter.getDataAndClear()
-            close(counts)
-        }()
+    if t.api == nil {
+        t.connectToApi()
     }
 
+    t.stream = t.api.PublicStreamFilter(values)
+}
+
+func (t *twitterListener) keepUpdatingClientWithData() {
+    timer := time.NewTicker(t.update)
+    for {
+        select {
+        case <-timer.C:
+            t.dataChannel <- t.counter.getDataAndClear()
+        case <-t.timeOutCh:
+            timer.Stop()
+            return
+        }
+    }
+}
+
+func (t *twitterListener) watchForRunningTimout() {
+    if t.timeout <= 0 {
+        return
+    }
+
+    time.Sleep(t.timeout)
+    close(t.timeOutCh)
+    t.stream.Interrupt()
+    t.dataChannel <- t.counter.getDataAndClear()
+    close(t.dataChannel)
+}
+
+func (t *twitterListener) processTweets() {
     tagsMap := make(map[string]bool)
-    for _, tag := range tags {
+    for _, tag := range t.tags {
         tagsMap[tag] = true
     }
 
-    go func() {
-        for msg := range stream.C {
-            tweet, ok := msg.(anaconda.Tweet)
-            if !ok {
-                continue
-            }
+    for msg := range t.stream.C {
+        tweet, ok := msg.(anaconda.Tweet)
+        if !ok {
+            continue
+        }
 
-            tags := tweet.Entities.Hashtags
-            for _, tag := range tags {
-                if _, ok := tagsMap[tag.Text]; ok {
-                    counter.incCount(tag.Text, 1)
-                }
+        tags := tweet.Entities.Hashtags
+        for _, tag := range tags {
+            if _, ok := tagsMap[tag.Text]; ok {
+                t.counter.incCount(tag.Text, 1)
             }
         }
-    }()
+    }
+}
 
-    return counts
+func (t *twitterListener) Listen() chan map[string]int {
+    go t.keepUpdatingClientWithData()
+    go t.watchForRunningTimout()
+
+    t.startTagStream()
+    go t.processTweets()
+
+    return t.dataChannel
 }
