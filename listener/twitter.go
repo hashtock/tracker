@@ -116,3 +116,20 @@ func (t *twitterListener) Listen() chan map[string]int {
 
     return t.dataChannel
 }
+
+func (t *twitterListener) SetTags(tags []string) {
+    t.tags = tags
+
+    // Stop here is stream is not running
+    if t.stream.Quit == nil {
+        return
+    }
+
+    // Close old stream
+    t.stream.Interrupt()
+    close(t.stream.C)
+
+    // Start new stream and start processing new tags
+    t.startTagStream()
+    go t.processTweets()
+}

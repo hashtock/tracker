@@ -28,7 +28,6 @@ func cmdListen(ctx *cli.Context) {
     }
 
     twitterListener := listener.NewTwitterListener(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
-
     countCh := twitterListener.Listen()
 
     for countMap := range countCh {
