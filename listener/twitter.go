@@ -2,6 +2,7 @@ package listener
 
 import (
     "net/url"
+    "sync"
     "time"
 
     "github.com/ChimeraCoder/anaconda"
@@ -20,7 +21,8 @@ type twitterListener struct {
     counter     *tagCounter
     dataChannel chan map[string]int
 
-    timeOutCh chan bool
+    stopAll chan struct{}
+    allDone sync.WaitGroup
 }
 
 func NewTwitterListener(tags []string, timeout time.Duration, update time.Duration, auth conf.Auth) Listener {
@@ -32,9 +34,7 @@ func NewTwitterListener(tags []string, timeout time.Duration, update time.Durati
     }
 
     listener.counter = newCounter()
-    listener.dataChannel = make(chan map[string]int, 0)
-
-    listener.timeOutCh = make(chan bool)
+    listener.dataChannel = make(chan map[string]int, 100)
 
     return listener
 }
@@ -62,13 +62,16 @@ func (t *twitterListener) startTagStream() {
 }
 
 func (t *twitterListener) keepUpdatingClientWithData() {
-    timer := time.NewTicker(t.update)
+    ticker := time.NewTicker(t.update)
+    t.allDone.Add(1)
+    defer t.allDone.Done()
+
     for {
         select {
-        case <-timer.C:
+        case <-ticker.C:
             t.dataChannel <- t.counter.getDataAndClear()
-        case <-t.timeOutCh:
-            timer.Stop()
+        case <-t.stopAll:
+            ticker.Stop()
             return
         }
     }
@@ -79,14 +82,25 @@ func (t *twitterListener) watchForRunningTimout() {
         return
     }
 
-    time.Sleep(t.timeout)
-    close(t.timeOutCh)
-    t.stream.Interrupt()
-    t.dataChannel <- t.counter.getDataAndClear()
-    close(t.dataChannel)
+    t.allDone.Add(1)
+    defer t.allDone.Done()
+
+    timeout := time.NewTimer(t.timeout)
+    for {
+        select {
+        case <-timeout.C:
+            t.Stop()
+        case <-t.stopAll:
+            timeout.Stop()
+            return
+        }
+    }
 }
 
 func (t *twitterListener) processTweets() {
+    t.allDone.Add(1)
+    defer t.allDone.Done()
+
     tagsMap := make(map[string]bool)
     for _, tag := range t.tags {
         tagsMap[tag] = true
@@ -108,6 +122,12 @@ func (t *twitterListener) processTweets() {
 }
 
 func (t *twitterListener) Listen() chan map[string]int {
+    if t.stopAll != nil {
+        return t.dataChannel
+    }
+
+    t.stopAll = make(chan struct{})
+
     go t.keepUpdatingClientWithData()
     go t.watchForRunningTimout()
 
@@ -115,6 +135,23 @@ func (t *twitterListener) Listen() chan map[string]int {
     go t.processTweets()
 
     return t.dataChannel
+}
+
+func (t *twitterListener) Stop() {
+    if t.stopAll == nil {
+        return
+    }
+
+    close(t.stopAll)
+
+    t.stream.Interrupt()
+    close(t.stream.C)
+
+    t.dataChannel <- t.counter.getDataAndClear()
+    close(t.dataChannel)
+
+    t.allDone.Wait()
+    t.stopAll = nil
 }
 
 func (t *twitterListener) SetTags(tags []string) {

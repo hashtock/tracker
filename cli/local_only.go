@@ -42,6 +42,7 @@ func cmdListen(ctx *cli.Context) {
                     twitterListener.SetTags(newTags)
                 }
             case <-exitSync:
+                twitterListener.Stop()
                 return
             }
         }
