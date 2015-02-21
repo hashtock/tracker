@@ -17,10 +17,11 @@ type Auth struct {
 }
 
 type General struct {
-    Timeout     string
-    UpdateTime  string
-    SampingTime string
-    DB          string
+    Timeout       string
+    UpdateTime    string
+    TagUpdateTime string
+    SampingTime   string
+    DB            string
 }
 
 type Config struct {
@@ -42,6 +43,7 @@ const exampleConfig = `[general]
 Timeout = 60s
 UpdateTime = 5s
 SampingTime = 15m
+TagUpdateTime = 1m
 DB = "mongodb://user:password@host:port/"
 
 [auth]
@@ -137,7 +139,7 @@ func GetRemoteConfig(remote string) RemoteConfig {
 func parseOrDie(duration_str string) time.Duration {
     duration, err := time.ParseDuration(duration_str)
     if err != nil {
-        log.Fatal(err)
+        log.Fatalf("Could not parse %#v as duration. Expected config: \n%s\n%v", duration_str, exampleConfig, err)
     }
     return duration
 }
@@ -146,6 +148,7 @@ func (g *General) validate() {
     g.TimeoutD()
     g.UpdateTimeD()
     g.SampingTimeD()
+    g.TagUpdateTimeD()
 }
 
 func (g *General) TimeoutD() time.Duration {
@@ -158,4 +161,8 @@ func (g *General) UpdateTimeD() time.Duration {
 
 func (g *General) SampingTimeD() time.Duration {
     return parseOrDie(g.SampingTime)
+}
+
+func (g *General) TagUpdateTimeD() time.Duration {
+    return parseOrDie(g.TagUpdateTime)
 }

@@ -55,3 +55,17 @@ func getDuration(ctx *cli.Context) time.Duration {
     }
     return time.Hour * 1
 }
+
+func getTags(storage core.CountReader) (tagNames []string, err error) {
+    tags, err := storage.Tags()
+    if err != nil {
+        return
+    }
+
+    tagNames = make([]string, len(tags))
+    for i, tag := range tags {
+        tagNames[i] = tag.Name
+    }
+
+    return
+}

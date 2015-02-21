@@ -3,6 +3,7 @@ package cli
 import (
     "fmt"
     "log"
+    "reflect"
     "time"
 
     "github.com/codegangsta/cli"
@@ -17,18 +18,34 @@ func cmdListen(ctx *cli.Context) {
     cfg := conf.GetConfig()
     counter := getCounter(ctx)
 
-    tags, err := counter.Tags()
+    exitSync := make(chan struct{})
+
+    tagNames, err := getTags(counter)
     if err != nil {
         log.Fatalln(err)
     }
 
-    tagNames := make([]string, len(tags))
-    for i, tag := range tags {
-        tagNames[i] = tag.Name
-    }
-
     twitterListener := listener.NewTwitterListener(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
     countCh := twitterListener.Listen()
+
+    go func() {
+        watcher := time.NewTimer(cfg.General.TagUpdateTimeD())
+        defer watcher.Stop()
+
+        for {
+            select {
+            case <-watcher.C:
+                newTags, err := getTags(counter)
+                if err != nil {
+                    log.Println("Could not get new tags:", err)
+                } else if !reflect.DeepEqual(newTags, twitterListener.Tags()) {
+                    twitterListener.SetTags(newTags)
+                }
+            case <-exitSync:
+                return
+            }
+        }
+    }()
 
     for countMap := range countCh {
         now := time.Now().Truncate(cfg.General.SampingTimeD())
@@ -49,6 +66,8 @@ func cmdListen(ctx *cli.Context) {
             fmt.Println("Could not store tag counts.", err.Error())
         }
     }
+
+    close(exitSync)
 }
 
 func cmdWebApi(ctx *cli.Context) {

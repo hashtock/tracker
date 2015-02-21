@@ -133,3 +133,7 @@ func (t *twitterListener) SetTags(tags []string) {
     t.startTagStream()
     go t.processTweets()
 }
+
+func (t *twitterListener) Tags() []string {
+    return t.tags
+}
