@@ -35,6 +35,13 @@ func NewTracker(conf conf.RemoteConfig) (*Tracker, error) {
     }, nil
 }
 
+func NewTrackerPlain(HMACSecret, URL string) (*Tracker, error) {
+    return NewTracker(conf.RemoteConfig{
+        HMACSecret: HMACSecret,
+        URL:        URL,
+    })
+}
+
 func (t *Tracker) Tags() (tags []core.Tag, err error) {
     res, lerr := t.doSignedRequest("GET", "/api/tag/")
     if lerr != nil {
