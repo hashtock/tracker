@@ -53,6 +53,22 @@ func (c *counterService) countForDuration(params martini.Params, r render.Render
     r.JSON(http.StatusOK, counts)
 }
 
+func (c *counterService) countSince(params martini.Params, r render.Render) {
+    since, err := time.Parse(time.RFC3339, params["since"])
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
+    counts, err := c.counter.CountsSince(since)
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
+    r.JSON(http.StatusOK, counts)
+}
+
 func (c *counterService) countDetailsForDuration(params martini.Params, r render.Render) {
     duration_str, ok := params["duration"]
     if !ok {
@@ -66,6 +82,22 @@ func (c *counterService) countDetailsForDuration(params martini.Params, r render
     }
 
     counts, err := c.counter.TrendsLast(duration)
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
+    r.JSON(http.StatusOK, counts)
+}
+
+func (c *counterService) countDetailsSince(params martini.Params, r render.Render) {
+    since, err := time.Parse(time.RFC3339, params["since"])
+    if err != nil {
+        r.Error(http.StatusBadRequest)
+        return
+    }
+
+    counts, err := c.counter.TrendsSince(since)
     if err != nil {
         r.Error(http.StatusBadRequest)
         return

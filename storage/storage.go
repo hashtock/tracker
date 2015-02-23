@@ -16,20 +16,32 @@ const (
 )
 
 type mgoCounter struct {
-    session *mgo.Session
-    db      string
+    session         *mgo.Session
+    db              string
+    minumAgeOfCount time.Duration
 }
 
-func NewMongoCounter(dbUrl string) (*mgoCounter, error) {
+func NewMongoCounter(dbUrl string, minumAgeOfCount time.Duration) (*mgoCounter, error) {
     msession, err := mgo.Dial(dbUrl)
     if err != nil {
         return nil, err
     }
 
     return &mgoCounter{
-        db:      dbUrl,
-        session: msession,
+        db:              dbUrl,
+        session:         msession,
+        minumAgeOfCount: minumAgeOfCount,
     }, nil
+}
+
+func (m *mgoCounter) showOnlyComplete() bson.M {
+    return bson.M{
+        "$match": bson.M{
+            "date": bson.M{
+                "$lt": time.Now().Add(-m.minumAgeOfCount),
+            },
+        },
+    }
 }
 
 func (m *mgoCounter) Tags() (tags []core.Tag, err error) {
@@ -59,6 +71,8 @@ func (m *mgoCounter) Counts(since, until time.Time) ([]core.TagCount, error) {
     }
 
     pipeline := []bson.M{
+        m.showOnlyComplete(),
+
         bson.M{"$match": query},
 
         bson.M{
@@ -97,6 +111,10 @@ func (m *mgoCounter) CountsLast(delta time.Duration) ([]core.TagCount, error) {
     return m.Counts(since, time.Time{})
 }
 
+func (m *mgoCounter) CountsSince(since time.Time) ([]core.TagCount, error) {
+    return m.Counts(since, time.Time{})
+}
+
 func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error) {
     query := bson.M{
         "count": bson.M{"$gt": 0},
@@ -115,6 +133,8 @@ func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error
     }
 
     pipeline := []bson.M{
+        m.showOnlyComplete(),
+
         bson.M{"$match": query},
 
         bson.M{"$sort": bson.M{"date": 1}},
@@ -157,6 +177,10 @@ func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error
 func (m *mgoCounter) TrendsLast(delta time.Duration) ([]core.TagCountTrend, error) {
     since := time.Now().Add(-delta)
 
+    return m.Trends(since, time.Time{})
+}
+
+func (m *mgoCounter) TrendsSince(since time.Time) ([]core.TagCountTrend, error) {
     return m.Trends(since, time.Time{})
 }
 

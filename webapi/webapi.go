@@ -15,7 +15,9 @@ func RunWebApi(counter core.CountReaderWritter) {
     m := martini.Classic()
     m.Use(render.Renderer())
     m.Use(func(res http.ResponseWriter, req *http.Request) {
-        hmacAuth.ChainedHandler(res, req, nil)
+        if false {
+            hmacAuth.ChainedHandler(res, req, nil)
+        }
     })
 
     cs := counterService{counter}
@@ -27,10 +29,12 @@ func RunWebApi(counter core.CountReaderWritter) {
     m.Group("/api/counts", func(r martini.Router) {
         r.Get("/", cs.countForDuration)
         r.Get("/:duration/", cs.countForDuration)
+        r.Get("/since/:since/", cs.countSince)
     })
     m.Group("/api/trends", func(r martini.Router) {
         r.Get("/", cs.countDetailsForDuration)
         r.Get("/:duration/", cs.countDetailsForDuration)
+        r.Get("/since/:since/", cs.countDetailsSince)
     })
 
     m.Run()

@@ -10,8 +10,16 @@ type CountTracker interface {
 
 type CountReader interface {
     Tags() ([]Tag, error)
+}
+
+type CountReaderLast interface {
     CountsLast(duration time.Duration) ([]TagCount, error)
     TrendsLast(duration time.Duration) ([]TagCountTrend, error)
+}
+
+type CountReaderSince interface {
+    CountsSince(since time.Time) ([]TagCount, error)
+    TrendsSince(since time.Time) ([]TagCountTrend, error)
 }
 
 type CountWritter interface {
@@ -26,11 +34,15 @@ type CountDestroyer interface {
 type Counter interface {
     CountDestroyer
     CountReader
+    CountReaderLast
+    CountReaderSince
     CountTracker
     CountWritter
 }
 
 type CountReaderWritter interface {
     CountReader
+    CountReaderLast
+    CountReaderSince
     CountWritter
 }

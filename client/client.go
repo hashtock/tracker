@@ -82,6 +82,26 @@ func (t *Tracker) CountsLast(duration time.Duration) (counts []core.TagCount, er
     return
 }
 
+func (t *Tracker) CountsSince(since time.Time) (counts []core.TagCount, err error) {
+    uri := fmt.Sprintf("/api/counts/since/%s/", since.Format(time.RFC3339))
+    res, lerr := t.doSignedRequest("GET", uri)
+    if lerr != nil {
+        err = lerr
+        return
+    }
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    res.Body.Close()
+
+    if err := json.Unmarshal(body, &counts); err != nil {
+        log.Fatalln(err)
+    }
+    return
+}
+
 func (t *Tracker) AddTag(tag string) (err error) {
     uri := fmt.Sprintf("/api/tag/%s/", tag)
     _, err = t.doSignedRequest("PUT", uri)
@@ -90,6 +110,26 @@ func (t *Tracker) AddTag(tag string) (err error) {
 
 func (t *Tracker) TrendsLast(duration time.Duration) (trends []core.TagCountTrend, err error) {
     uri := fmt.Sprintf("/api/trends/%s/", duration)
+    res, lerr := t.doSignedRequest("GET", uri)
+    if lerr != nil {
+        err = lerr
+        return
+    }
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    res.Body.Close()
+
+    if err := json.Unmarshal(body, &trends); err != nil {
+        log.Fatalln(err)
+    }
+    return
+}
+
+func (t *Tracker) TrendsSince(since time.Time) (trends []core.TagCountTrend, err error) {
+    uri := fmt.Sprintf("/api/trends/since/%s/", since.Format(time.RFC3339))
     res, lerr := t.doSignedRequest("GET", uri)
     if lerr != nil {
         err = lerr
