@@ -27,10 +27,10 @@ func cmdListTags(ctx *cli.Context) {
 }
 
 func cmdListTagCounts(ctx *cli.Context) {
-    timeSpan := getDuration(ctx)
+    since, until, timeSpan := getTimeRangeFromDuration(ctx)
     counter := getCounterRW(ctx)
 
-    tagCounts, err := counter.CountsLast(timeSpan)
+    tagCounts, err := counter.Counts(since, until)
     if err != nil {
         log.Fatalln(err)
     }
@@ -47,10 +47,10 @@ func cmdListTagCounts(ctx *cli.Context) {
 }
 
 func cmdListTagCountsDetails(ctx *cli.Context) {
-    timeSpan := getDuration(ctx)
+    since, until, timeSpan := getTimeRangeFromDuration(ctx)
     counter := getCounterRW(ctx)
 
-    tagCountTrend, err := counter.TrendsLast(timeSpan)
+    tagCountTrend, err := counter.Trends(since, until)
     if err != nil {
         log.Fatalln(err)
     }

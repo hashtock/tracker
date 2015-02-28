@@ -45,15 +45,19 @@ func getCounter(ctx *cli.Context) core.Counter {
     return counter
 }
 
-func getDuration(ctx *cli.Context) time.Duration {
+func getTimeRangeFromDuration(ctx *cli.Context) (since time.Time, until time.Time, duration time.Duration) {
+    duration = time.Hour * 1
     if ctx.Args().Present() {
-        timeSpan, err := time.ParseDuration(ctx.Args().First())
+        var err error
+        duration, err = time.ParseDuration(ctx.Args().First())
         if err != nil {
             log.Fatalln(err)
         }
-        return timeSpan
     }
-    return time.Hour * 1
+
+    until = time.Now()
+    since = until.Add(-duration)
+    return
 }
 
 func getTags(storage core.CountReader) (tagNames []string, err error) {

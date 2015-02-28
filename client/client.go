@@ -43,7 +43,7 @@ func NewTrackerPlain(HMACSecret, URL string) (*Tracker, error) {
 }
 
 func (t *Tracker) Tags() (tags []core.Tag, err error) {
-    res, lerr := t.doSignedRequest("GET", "/api/tag/")
+    res, lerr := t.doSignedRequest("GET", "/api/tag/", nil)
     if lerr != nil {
         err = lerr
         return
@@ -62,29 +62,12 @@ func (t *Tracker) Tags() (tags []core.Tag, err error) {
     return
 }
 
-func (t *Tracker) CountsLast(duration time.Duration) (counts []core.TagCount, err error) {
-    uri := fmt.Sprintf("/api/counts/%s/", duration)
-    res, lerr := t.doSignedRequest("GET", uri)
-    if lerr != nil {
-        err = lerr
-        return
-    }
+func (t *Tracker) Counts(since, until time.Time) (counts []core.TagCount, err error) {
+    query := url.Values{}
+    query.Set("since", since.Format(time.RFC3339))
+    query.Set("until", until.Format(time.RFC3339))
 
-    body, err := ioutil.ReadAll(res.Body)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    res.Body.Close()
-
-    if err := json.Unmarshal(body, &counts); err != nil {
-        log.Fatalln(err)
-    }
-    return
-}
-
-func (t *Tracker) CountsSince(since time.Time) (counts []core.TagCount, err error) {
-    uri := fmt.Sprintf("/api/counts/since/%s/", since.Format(time.RFC3339))
-    res, lerr := t.doSignedRequest("GET", uri)
+    res, lerr := t.doSignedRequest("GET", "/api/counts/", query)
     if lerr != nil {
         err = lerr
         return
@@ -104,13 +87,16 @@ func (t *Tracker) CountsSince(since time.Time) (counts []core.TagCount, err erro
 
 func (t *Tracker) AddTag(tag string) (err error) {
     uri := fmt.Sprintf("/api/tag/%s/", tag)
-    _, err = t.doSignedRequest("PUT", uri)
+    _, err = t.doSignedRequest("PUT", uri, nil)
     return
 }
 
-func (t *Tracker) TrendsLast(duration time.Duration) (trends []core.TagCountTrend, err error) {
-    uri := fmt.Sprintf("/api/trends/%s/", duration)
-    res, lerr := t.doSignedRequest("GET", uri)
+func (t *Tracker) Trends(since, until time.Time) (trends []core.TagCountTrend, err error) {
+    query := url.Values{}
+    query.Set("since", since.Format(time.RFC3339))
+    query.Set("until", until.Format(time.RFC3339))
+
+    res, lerr := t.doSignedRequest("GET", "/api/trends/", query)
     if lerr != nil {
         err = lerr
         return
@@ -128,31 +114,12 @@ func (t *Tracker) TrendsLast(duration time.Duration) (trends []core.TagCountTren
     return
 }
 
-func (t *Tracker) TrendsSince(since time.Time) (trends []core.TagCountTrend, err error) {
-    uri := fmt.Sprintf("/api/trends/since/%s/", since.Format(time.RFC3339))
-    res, lerr := t.doSignedRequest("GET", uri)
-    if lerr != nil {
-        err = lerr
-        return
-    }
-
-    body, err := ioutil.ReadAll(res.Body)
-    if err != nil {
-        log.Fatalln(err)
-    }
-    res.Body.Close()
-
-    if err := json.Unmarshal(body, &trends); err != nil {
-        log.Fatalln(err)
-    }
-    return
-}
-
-func (t Tracker) doSignedRequest(method string, path string) (*http.Response, error) {
+func (t Tracker) doSignedRequest(method, path string, query url.Values) (*http.Response, error) {
     url := url.URL{
-        Scheme: "http",
-        Host:   t.Host,
-        Path:   path,
+        Scheme:   "http",
+        Host:     t.Host,
+        Path:     path,
+        RawQuery: query.Encode(),
     }
 
     req, err := http.NewRequest(method, url.String(), nil)

@@ -22,19 +22,13 @@ func RunWebApi(counter core.CountReaderWritter) {
 
     cs := counterService{counter}
 
-    m.Group("/api/tag", func(r martini.Router) {
-        r.Get("/", cs.allTags)
-        r.Put("/:name/", cs.addTag)
-    })
-    m.Group("/api/counts", func(r martini.Router) {
-        r.Get("/", cs.countForDuration)
-        r.Get("/:duration/", cs.countForDuration)
-        r.Get("/since/:since/", cs.countSince)
-    })
-    m.Group("/api/trends", func(r martini.Router) {
-        r.Get("/", cs.countDetailsForDuration)
-        r.Get("/:duration/", cs.countDetailsForDuration)
-        r.Get("/since/:since/", cs.countDetailsSince)
+    m.Group("/api", func(r martini.Router) {
+        r.Group("/tag", func(sr martini.Router) {
+            sr.Get("/", cs.allTags)
+            sr.Put("/:name/", cs.addTag)
+        })
+        r.Get("/counts", cs.counts)
+        r.Get("/trends", cs.trends)
     })
 
     m.Run()

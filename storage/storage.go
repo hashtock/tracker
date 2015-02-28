@@ -105,16 +105,6 @@ func (m *mgoCounter) Counts(since, until time.Time) ([]core.TagCount, error) {
     return tagCounts, err
 }
 
-func (m *mgoCounter) CountsLast(delta time.Duration) ([]core.TagCount, error) {
-    since := time.Now().Add(-delta)
-
-    return m.Counts(since, time.Time{})
-}
-
-func (m *mgoCounter) CountsSince(since time.Time) ([]core.TagCount, error) {
-    return m.Counts(since, time.Time{})
-}
-
 func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error) {
     query := bson.M{
         "count": bson.M{"$gt": 0},
@@ -172,16 +162,6 @@ func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error
     err := pipe.All(&tagCounts)
 
     return tagCounts, err
-}
-
-func (m *mgoCounter) TrendsLast(delta time.Duration) ([]core.TagCountTrend, error) {
-    since := time.Now().Add(-delta)
-
-    return m.Trends(since, time.Time{})
-}
-
-func (m *mgoCounter) TrendsSince(since time.Time) ([]core.TagCountTrend, error) {
-    return m.Trends(since, time.Time{})
 }
 
 func (m *mgoCounter) AddTag(tagName string) error {
