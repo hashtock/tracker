@@ -29,7 +29,7 @@ func cmdListen(ctx *cli.Context) {
     countCh := twitterListener.Listen()
 
     go func() {
-        watcher := time.NewTimer(cfg.General.TagUpdateTimeD())
+        watcher := time.NewTicker(cfg.General.TagUpdateTimeD())
         defer watcher.Stop()
 
         for {
@@ -39,6 +39,7 @@ func cmdListen(ctx *cli.Context) {
                 if err != nil {
                     log.Println("Could not get new tags:", err)
                 } else if !reflect.DeepEqual(newTags, twitterListener.Tags()) {
+                    log.Println("Setting new list of tags to track")
                     twitterListener.SetTags(newTags)
                 }
             case <-exitSync:

@@ -1,6 +1,7 @@
 package listener
 
 import (
+    "log"
     "net/url"
     "sync"
     "time"
@@ -157,16 +158,19 @@ func (t *twitterListener) Stop() {
 func (t *twitterListener) SetTags(tags []string) {
     t.tags = tags
 
-    // Stop here is stream is not running
+    // Stop here if stream is not running
     if t.stream.Quit == nil {
+        log.Println("Stream is not running yet")
         return
     }
 
     // Close old stream
+    log.Println("Closing old stream")
     t.stream.Interrupt()
     close(t.stream.C)
 
     // Start new stream and start processing new tags
+    log.Println("Starting new stream")
     t.startTagStream()
     go t.processTweets()
 }
