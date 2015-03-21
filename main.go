@@ -1,12 +1,12 @@
 package main
 
 import (
-    "os"
+	"os"
 
-    "github.com/hashtock/tracker/cli"
+	"github.com/hashtock/tracker/cli"
 )
 
 func main() {
-    app := cli.CliApp()
-    app.Run(os.Args)
+	app := cli.CliApp()
+	app.Run(os.Args)
 }

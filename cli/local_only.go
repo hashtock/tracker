@@ -1,100 +1,100 @@
 package cli
 
 import (
-    "fmt"
-    "log"
-    "reflect"
-    "time"
+	"fmt"
+	"log"
+	"reflect"
+	"time"
 
-    "github.com/codegangsta/cli"
+	"github.com/codegangsta/cli"
 
-    "github.com/hashtock/tracker/conf"
-    "github.com/hashtock/tracker/core"
-    "github.com/hashtock/tracker/listener"
-    "github.com/hashtock/tracker/webapi"
+	"github.com/hashtock/tracker/conf"
+	"github.com/hashtock/tracker/core"
+	"github.com/hashtock/tracker/listener"
+	"github.com/hashtock/tracker/webapi"
 )
 
 func cmdListen(ctx *cli.Context) {
-    cfg := conf.GetConfig()
-    counter := getCounter(ctx)
+	cfg := conf.GetConfig()
+	counter := getCounter(ctx)
 
-    exitSync := make(chan struct{})
+	exitSync := make(chan struct{})
 
-    tagNames, err := getTags(counter)
-    if err != nil {
-        log.Fatalln(err)
-    }
+	tagNames, err := getTags(counter)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
-    twitterListener := listener.NewTwitterListener(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
-    countCh := twitterListener.Listen()
+	twitterListener := listener.NewTwitterListener(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
+	countCh := twitterListener.Listen()
 
-    go func() {
-        watcher := time.NewTicker(cfg.General.TagUpdateTimeD())
-        defer watcher.Stop()
+	go func() {
+		watcher := time.NewTicker(cfg.General.TagUpdateTimeD())
+		defer watcher.Stop()
 
-        for {
-            select {
-            case <-watcher.C:
-                newTags, err := getTags(counter)
-                if err != nil {
-                    log.Println("Could not get new tags:", err)
-                } else if !reflect.DeepEqual(newTags, twitterListener.Tags()) {
-                    log.Println("Setting new list of tags to track")
-                    twitterListener.SetTags(newTags)
-                }
-            case <-exitSync:
-                twitterListener.Stop()
-                return
-            }
-        }
-    }()
+		for {
+			select {
+			case <-watcher.C:
+				newTags, err := getTags(counter)
+				if err != nil {
+					log.Println("Could not get new tags:", err)
+				} else if !reflect.DeepEqual(newTags, twitterListener.Tags()) {
+					log.Println("Setting new list of tags to track")
+					twitterListener.SetTags(newTags)
+				}
+			case <-exitSync:
+				twitterListener.Stop()
+				return
+			}
+		}
+	}()
 
-    for countMap := range countCh {
-        now := time.Now().Truncate(cfg.General.SampingTimeD())
-        if ctx.GlobalBool("verbose") {
-            fmt.Printf("Time: %v\tData: %v\n", now, countMap)
-        }
-        tc := make([]core.TagCount, 0, len(countMap))
+	for countMap := range countCh {
+		now := time.Now().Truncate(cfg.General.SampingTimeD())
+		if ctx.GlobalBool("verbose") {
+			fmt.Printf("Time: %v\tData: %v\n", now, countMap)
+		}
+		tc := make([]core.TagCount, 0, len(countMap))
 
-        for tagName, count := range countMap {
-            tc = append(tc, core.TagCount{
-                Name:  tagName,
-                Count: count,
-                Date:  now,
-            })
-        }
+		for tagName, count := range countMap {
+			tc = append(tc, core.TagCount{
+				Name:  tagName,
+				Count: count,
+				Date:  now,
+			})
+		}
 
-        if err := counter.AddTagCounts(tc); err != nil {
-            fmt.Println("Could not store tag counts.", err.Error())
-        }
-    }
+		if err := counter.AddTagCounts(tc); err != nil {
+			fmt.Println("Could not store tag counts.", err.Error())
+		}
+	}
 
-    close(exitSync)
+	close(exitSync)
 }
 
 func cmdWebApi(ctx *cli.Context) {
-    counter := getCounterRW(ctx)
-    cfg := conf.GetConfig()
-    cfg.General.Timeout = "0" // No timeout
-    go cmdListen(ctx)
+	counter := getCounterRW(ctx)
+	cfg := conf.GetConfig()
+	cfg.General.Timeout = "0" // No timeout
+	go cmdListen(ctx)
 
-    webapi.RunWebApi(counter)
+	webapi.RunWebApi(counter)
 }
 
 func cmdClearAll(ctx *cli.Context) {
-    counter := getCounter(ctx)
+	counter := getCounter(ctx)
 
-    if err := counter.RemoveAll(); err != nil {
-        log.Fatalln("Could not remove the data: ", err)
-    }
-    fmt.Println("Done. Nothing left...")
+	if err := counter.RemoveAll(); err != nil {
+		log.Fatalln("Could not remove the data: ", err)
+	}
+	fmt.Println("Done. Nothing left...")
 }
 
 func cmdClearCounts(ctx *cli.Context) {
-    counter := getCounter(ctx)
+	counter := getCounter(ctx)
 
-    if err := counter.RemoveCounts(); err != nil {
-        log.Println("Could not remove counts.", err)
-    }
-    fmt.Println("Done. Counts cleared tags are still in place")
+	if err := counter.RemoveCounts(); err != nil {
+		log.Println("Could not remove counts.", err)
+	}
+	fmt.Println("Done. Counts cleared tags are still in place")
 }
