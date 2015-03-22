@@ -17,29 +17,29 @@ import (
 func parseQuery(query url.Values) (since, until time.Time, err error) {
 	var duration time.Duration
 
-	since_str := query.Get("since")
-	until_str := query.Get("until")
-	duration_str := query.Get("duration")
+	sinceStr := query.Get("since")
+	untilStr := query.Get("until")
+	durationStr := query.Get("duration")
 
-	if (since_str != "" || until_str != "") && duration_str != "" {
+	if (sinceStr != "" || untilStr != "") && durationStr != "" {
 		err = errors.New("Dates and duration specified")
 		return
 	}
 
-	if duration_str != "" {
-		if duration, err = time.ParseDuration(duration_str); err != nil {
+	if durationStr != "" {
+		if duration, err = time.ParseDuration(durationStr); err != nil {
 			return
 		}
 	}
 
-	if since_str != "" {
-		if since, err = time.Parse(time.RFC3339, since_str); err != nil {
+	if sinceStr != "" {
+		if since, err = time.Parse(time.RFC3339, sinceStr); err != nil {
 			return
 		}
 	}
 
-	if until_str != "" {
-		if until, err = time.Parse(time.RFC3339, until_str); err != nil {
+	if untilStr != "" {
+		if until, err = time.Parse(time.RFC3339, untilStr); err != nil {
 			return
 		}
 	}

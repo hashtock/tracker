@@ -9,7 +9,7 @@ import (
 	"github.com/hashtock/tracker/core"
 )
 
-func RunWebApi(counter core.CountReaderWritter) {
+func RunWebAPI(counter core.CountReaderWritter) {
 	hmacAuth := newVanGoh()
 
 	m := martini.Classic()

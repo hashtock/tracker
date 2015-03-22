@@ -4,7 +4,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-func CliApp() *cli.App {
+func App() *cli.App {
 	app := cli.NewApp()
 	app.Name = "tracker"
 	app.Usage = "Twitter hashtag count tracking"
@@ -15,14 +15,14 @@ func CliApp() *cli.App {
 		cli.BoolFlag{Name: "verbose", Usage: "be more verbose"},
 		cli.StringFlag{Name: "remote", Usage: "execute on remote server"},
 	}
-	app.Action = cmdWebApi
+	app.Action = cmdWebAPI
 
 	app.Commands = []cli.Command{
 		{
 			Name:      "web",
 			ShortName: "w",
 			Usage:     "run web server",
-			Action:    cmdWebApi,
+			Action:    cmdWebAPI,
 		},
 		{
 			Name:      "listen",

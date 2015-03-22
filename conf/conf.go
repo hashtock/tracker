@@ -36,8 +36,8 @@ type RemoteConfig struct {
 
 type RemoteConfigs map[string]RemoteConfig
 
-var cfg *Config = nil
-var rcfgs RemoteConfigs = nil
+var cfg *Config
+var rcfgs RemoteConfigs
 
 const exampleConfig = `[general]
 Timeout = 60s
@@ -90,11 +90,11 @@ func loadConfig() {
 func loadRemoteConfigs() {
 	rcfgs = make(RemoteConfigs, 0)
 
-	tmp_rcfgs := struct {
+	tmpRCfgs := struct {
 		Remote map[string]*RemoteConfig
 	}{}
 
-	err := gcfg.ReadFileInto(&tmp_rcfgs, "remotes.ini")
+	err := gcfg.ReadFileInto(&tmpRCfgs, "remotes.ini")
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Fatalf("Could not find remote tracker configuration. Expected remotes.ini with content:\n%v\n", exampleRemoteConfig)
@@ -103,7 +103,7 @@ func loadRemoteConfigs() {
 		}
 	}
 
-	for key, config := range tmp_rcfgs.Remote {
+	for key, config := range tmpRCfgs.Remote {
 		rcfgs[key] = *config
 	}
 }
@@ -136,10 +136,10 @@ func GetRemoteConfig(remote string) RemoteConfig {
 	return config
 }
 
-func parseOrDie(duration_str string) time.Duration {
-	duration, err := time.ParseDuration(duration_str)
+func parseOrDie(durationStr string) time.Duration {
+	duration, err := time.ParseDuration(durationStr)
 	if err != nil {
-		log.Fatalf("Could not parse %#v as duration. Expected config: \n%s\n%v", duration_str, exampleConfig, err)
+		log.Fatalf("Could not parse %#v as duration. Expected config: \n%s\n%v", durationStr, exampleConfig, err)
 	}
 	return duration
 }

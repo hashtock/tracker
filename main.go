@@ -7,6 +7,6 @@ import (
 )
 
 func main() {
-	app := cli.CliApp()
+	app := cli.App()
 	app.Run(os.Args)
 }

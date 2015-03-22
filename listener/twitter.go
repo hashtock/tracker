@@ -40,7 +40,7 @@ func NewTwitterListener(tags []string, timeout time.Duration, update time.Durati
 	return listener
 }
 
-func (t *twitterListener) connectToApi() {
+func (t *twitterListener) connectToAPI() {
 	anaconda.SetConsumerKey(t.auth.ConsumerKey)
 	anaconda.SetConsumerSecret(t.auth.SecretKey)
 	t.api = anaconda.NewTwitterApi(t.auth.AccessToken, t.auth.AccessTokenSecret)
@@ -56,7 +56,7 @@ func (t *twitterListener) startTagStream() {
 	values["track"] = hashedTags
 
 	if t.api == nil {
-		t.connectToApi()
+		t.connectToAPI()
 	}
 
 	t.stream = t.api.PublicStreamFilter(values)

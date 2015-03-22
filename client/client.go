@@ -5,10 +5,9 @@ import (
 	"crypto"
 	"crypto/hmac"
 	"crypto/md5"
-	_ "crypto/sha1"
+	_ "crypto/sha1" // Register hashing alg
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -144,7 +143,7 @@ func (t Tracker) doSignedRequest(method, path string, query url.Values) (*http.R
 	}
 
 	if res.StatusCode >= 400 {
-		return nil, errors.New(fmt.Sprintf("Problem with request: %s", res.Status))
+		return nil, fmt.Errorf("Problem with request: %s", res.Status)
 	}
 
 	return res, nil

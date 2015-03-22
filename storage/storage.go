@@ -21,14 +21,14 @@ type mgoCounter struct {
 	minumAgeOfCount time.Duration
 }
 
-func NewMongoCounter(dbUrl string, minumAgeOfCount time.Duration) (*mgoCounter, error) {
-	msession, err := mgo.Dial(dbUrl)
+func NewMongoCounter(dbURL string, minumAgeOfCount time.Duration) (*mgoCounter, error) {
+	msession, err := mgo.Dial(dbURL)
 	if err != nil {
 		return nil, err
 	}
 
 	return &mgoCounter{
-		db:              dbUrl,
+		db:              dbURL,
 		session:         msession,
 		minumAgeOfCount: minumAgeOfCount,
 	}, nil
@@ -53,7 +53,7 @@ func (m *mgoCounter) Tags() (tags []core.Tag, err error) {
 	return
 }
 
-func (m *mgoCounter) Counts(since, until time.Time) ([]core.TagCount, error) {
+func (m *mgoCounter) Counts(since, until time.Time) (tagCounts []core.TagCount, err error) {
 	query := bson.M{
 		"count": bson.M{"$gt": 0},
 		"date": bson.M{
@@ -93,19 +93,17 @@ func (m *mgoCounter) Counts(since, until time.Time) ([]core.TagCount, error) {
 		},
 	}
 
-	tagCounts := make([]core.TagCount, 0)
-
 	lsession := m.session.Copy()
 	defer lsession.Close()
 
 	col := lsession.DB(dbName).C(tagCountCollectionName)
 	pipe := col.Pipe(pipeline)
-	err := pipe.All(&tagCounts)
+	err = pipe.All(&tagCounts)
 
 	return tagCounts, err
 }
 
-func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error) {
+func (m *mgoCounter) Trends(since, until time.Time) (tagCounts []core.TagCountTrend, err error) {
 	query := bson.M{
 		"count": bson.M{"$gt": 0},
 		"date": bson.M{
@@ -152,14 +150,12 @@ func (m *mgoCounter) Trends(since, until time.Time) ([]core.TagCountTrend, error
 		},
 	}
 
-	tagCounts := make([]core.TagCountTrend, 0)
-
 	lsession := m.session.Copy()
 	defer lsession.Close()
 
 	col := lsession.DB(dbName).C(tagCountCollectionName)
 	pipe := col.Pipe(pipeline)
-	err := pipe.All(&tagCounts)
+	err = pipe.All(&tagCounts)
 
 	return tagCounts, err
 }
@@ -190,17 +186,17 @@ func (m *mgoCounter) AddTagCounts(tagCounts []core.TagCount) error {
 	defer lsession.Close()
 	col := lsession.DB(dbName).C(tagCountCollectionName)
 
-	var lastErr error = nil
+	var lastErr error
 	for _, tag := range tagCounts {
 		selector := core.TagCount{
 			Name: tag.Name,
 			Date: tag.Date,
 		}
 
-		update_with := bson.M{
+		updateWith := bson.M{
 			"$inc": bson.M{"count": tag.Count},
 		}
-		_, err := col.Upsert(selector, update_with)
+		_, err := col.Upsert(selector, updateWith)
 
 		if err != nil {
 			lastErr = err

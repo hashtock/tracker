@@ -2,7 +2,7 @@ package webapi
 
 import (
 	"crypto"
-	_ "crypto/sha1"
+	_ "crypto/sha1" // Register hashing alg
 	"log"
 	"time"
 

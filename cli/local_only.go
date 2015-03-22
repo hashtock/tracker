@@ -72,13 +72,13 @@ func cmdListen(ctx *cli.Context) {
 	close(exitSync)
 }
 
-func cmdWebApi(ctx *cli.Context) {
+func cmdWebAPI(ctx *cli.Context) {
 	counter := getCounterRW(ctx)
 	cfg := conf.GetConfig()
 	cfg.General.Timeout = "0" // No timeout
 	go cmdListen(ctx)
 
-	webapi.RunWebApi(counter)
+	webapi.RunWebAPI(counter)
 }
 
 func cmdClearAll(ctx *cli.Context) {
