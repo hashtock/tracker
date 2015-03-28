@@ -62,3 +62,31 @@ func (c *counterService) trends(req *http.Request, r render.Render) {
 
 	r.JSON(http.StatusOK, trends)
 }
+
+func (c *counterService) tagTrends(req *http.Request, params martini.Params, r render.Render) {
+	tag := params["name"]
+	if tag == "" {
+		r.Error(http.StatusBadRequest)
+		return
+	}
+
+	since, until, err := parseQuery(req.URL.Query())
+	if err != nil {
+		r.Error(http.StatusBadRequest)
+		return
+	}
+
+	sampling, err := getSamplingFromQuery(req.URL.Query())
+	if err != nil {
+		r.Error(http.StatusBadRequest)
+		return
+	}
+
+	trends, err := c.counter.TagTrends(tag, since, until, sampling)
+	if err != nil {
+		r.Error(http.StatusBadRequest)
+		return
+	}
+
+	r.JSON(http.StatusOK, trends)
+}

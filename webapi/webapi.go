@@ -27,8 +27,13 @@ func RunWebAPI(counter core.CountReaderWritter) {
 			sr.Get("/", cs.allTags)
 			sr.Put("/:name/", cs.addTag)
 		})
+
 		r.Get("/counts", cs.counts)
-		r.Get("/trends", cs.trends)
+
+		r.Group("/trends", func(sr martini.Router) {
+			sr.Get("/", cs.trends)
+			sr.Get("/:name/", cs.tagTrends)
+		})
 	})
 
 	m.Run()

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/url"
 	"time"
+
+	"github.com/hashtock/tracker/core"
 )
 
 // Using since, until and duration from query figures out actual since and util
@@ -58,4 +60,13 @@ func parseQuery(query url.Values) (since, until time.Time, err error) {
 	}
 
 	return
+}
+
+func getSamplingFromQuery(query url.Values) (sampling core.Sampling, err error) {
+	samplingStr := query.Get("sampling")
+	if samplingStr == "" {
+		return core.SamplingRaw, nil
+	}
+
+	return core.ParseSampling(samplingStr)
 }

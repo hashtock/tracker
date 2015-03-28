@@ -8,6 +8,7 @@ import (
 	_ "crypto/sha1" // Register hashing alg
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -90,26 +91,56 @@ func (t *Tracker) AddTag(tag string) (err error) {
 	return
 }
 
+func (t *Tracker) TagTrends(tag string, since, until time.Time, sampling core.Sampling) (tagCounts core.TagCountTrend, err error) {
+	rc, err := t.trendRequest(tag, since, until, sampling)
+	if err != nil {
+		return
+	}
+
+	decoder := json.NewDecoder(rc)
+	err = decoder.Decode(&tagCounts)
+	rc.Close()
+
+	return
+}
+
 func (t *Tracker) Trends(since, until time.Time) (trends []core.TagCountTrend, err error) {
+	rc, err := t.trendRequest("", since, until, core.SamplingRaw)
+	if err != nil {
+		return
+	}
+
+	decoder := json.NewDecoder(rc)
+	err = decoder.Decode(&trends)
+	rc.Close()
+
+	return
+}
+
+func (t *Tracker) trendRequest(tag string, since, until time.Time, sampling core.Sampling) (rc io.ReadCloser, err error) {
 	query := url.Values{}
 	query.Set("since", since.Format(time.RFC3339))
 	query.Set("until", until.Format(time.RFC3339))
 
-	res, lerr := t.doSignedRequest("GET", "/api/trends/", query)
-	if lerr != nil {
-		err = lerr
+	if sampling != core.SamplingRaw {
+		query.Set("sampling", sampling.String())
+	}
+
+	if tag == "" && sampling.String() != "" {
+		err = errors.New("Sampling can be specified only for single tag")
 		return
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatalln(err)
+	url := "/api/trends/"
+	if tag != "" {
+		url = fmt.Sprintf("%v%v/", url, tag)
 	}
-	res.Body.Close()
 
-	if err := json.Unmarshal(body, &trends); err != nil {
-		log.Fatalln(err)
+	rec, err := t.doSignedRequest("GET", url, query)
+	if err != nil {
+		return
 	}
+	rc = rec.Body
 	return
 }
 

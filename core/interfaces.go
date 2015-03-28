@@ -10,8 +10,11 @@ type CountTracker interface {
 
 type CountReader interface {
 	Tags() ([]Tag, error)
-	Trends(since, until time.Time) ([]TagCountTrend, error)
+
 	Counts(since, until time.Time) ([]TagCount, error)
+
+	Trends(since, until time.Time) ([]TagCountTrend, error)
+	TagTrends(tag string, since, until time.Time, sampling Sampling) (TagCountTrend, error)
 }
 
 type CountWritter interface {

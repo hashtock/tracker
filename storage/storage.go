@@ -34,14 +34,10 @@ func NewMongoCounter(dbURL string, minumAgeOfCount time.Duration) (*mgoCounter, 
 	}, nil
 }
 
-func (m *mgoCounter) showOnlyComplete() bson.M {
-	return bson.M{
-		"$match": bson.M{
-			"date": bson.M{
-				"$lt": time.Now().Add(-m.minumAgeOfCount),
-			},
-		},
-	}
+func (m *mgoCounter) collection(collectionName string) *mgo.Collection {
+	lsession := m.session.Copy()
+	col := lsession.DB(dbName).C(collectionName)
+	return col
 }
 
 func (m *mgoCounter) Tags() (tags []core.Tag, err error) {
@@ -54,24 +50,10 @@ func (m *mgoCounter) Tags() (tags []core.Tag, err error) {
 }
 
 func (m *mgoCounter) Counts(since, until time.Time) (tagCounts []core.TagCount, err error) {
-	query := bson.M{
-		"count": bson.M{"$gt": 0},
-		"date": bson.M{
-			"$gte": since,
-			"$lt":  until,
-		},
-	}
-
-	if since.IsZero() && until.IsZero() {
-		delete(query, "date")
-	} else if since.IsZero() {
-		delete(query["date"].(bson.M), "$gte")
-	} else if until.IsZero() {
-		delete(query["date"].(bson.M), "$lt")
-	}
+	query := baseQuery(since, until)
 
 	pipeline := []bson.M{
-		m.showOnlyComplete(),
+		showOnlyComplete(m.minumAgeOfCount),
 
 		bson.M{"$match": query},
 
@@ -93,40 +75,30 @@ func (m *mgoCounter) Counts(since, until time.Time) (tagCounts []core.TagCount, 
 		},
 	}
 
-	lsession := m.session.Copy()
-	defer lsession.Close()
+	col := m.collection(tagCountCollectionName)
+	defer col.Database.Session.Close()
 
-	col := lsession.DB(dbName).C(tagCountCollectionName)
 	pipe := col.Pipe(pipeline)
 	err = pipe.All(&tagCounts)
 
 	return tagCounts, err
 }
 
-func (m *mgoCounter) Trends(since, until time.Time) (tagCounts []core.TagCountTrend, err error) {
-	query := bson.M{
-		"count": bson.M{"$gt": 0},
-		"date": bson.M{
-			"$gte": since,
-			"$lt":  until,
-		},
+func (m *mgoCounter) trendsPipeline(tag string, since, until time.Time, sampling core.Sampling) []bson.M {
+	query := baseQuery(since, until)
+	if tag != "" {
+		query["name"] = tag
 	}
 
-	if since.IsZero() && until.IsZero() {
-		delete(query, "date")
-	} else if since.IsZero() {
-		delete(query["date"].(bson.M), "$gte")
-	} else if until.IsZero() {
-		delete(query["date"].(bson.M), "$lt")
-	}
-
-	pipeline := []bson.M{
-		m.showOnlyComplete(),
-
+	pipeMatch := []bson.M{
+		showOnlyComplete(m.minumAgeOfCount),
 		bson.M{"$match": query},
+		sortByDate(),
+	}
 
-		bson.M{"$sort": bson.M{"date": 1}},
+	pipeResample := resamplePipeline(sampling)
 
+	pipeGroupResults := []bson.M{
 		bson.M{
 			"$group": bson.M{
 				"_id": "$name",
@@ -146,17 +118,37 @@ func (m *mgoCounter) Trends(since, until time.Time) (tagCounts []core.TagCountTr
 				"_id":    0,
 				"name":   "$_id",
 				"counts": 1,
+				"date":   1,
 			},
 		},
 	}
 
-	lsession := m.session.Copy()
-	defer lsession.Close()
+	pipeline := pipeMatch
+	pipeline = append(pipeline, pipeResample...)
+	pipeline = append(pipeline, pipeGroupResults...)
 
-	col := lsession.DB(dbName).C(tagCountCollectionName)
+	return pipeline
+}
+
+func (m *mgoCounter) TagTrends(tag string, since, until time.Time, sampling core.Sampling) (tagCounts core.TagCountTrend, err error) {
+	col := m.collection(tagCountCollectionName)
+	defer col.Database.Session.Close()
+
+	pipeline := m.trendsPipeline(tag, since, until, sampling)
+
+	pipe := col.Pipe(pipeline)
+	err = pipe.One(&tagCounts)
+	return
+}
+
+func (m *mgoCounter) Trends(since, until time.Time) (tagCounts []core.TagCountTrend, err error) {
+	col := m.collection(tagCountCollectionName)
+	defer col.Database.Session.Close()
+
+	pipeline := m.trendsPipeline("", since, until, core.SamplingRaw)
+
 	pipe := col.Pipe(pipeline)
 	err = pipe.All(&tagCounts)
-
 	return tagCounts, err
 }
 
