@@ -21,7 +21,7 @@ type mgoCounter struct {
 	minumAgeOfCount time.Duration
 }
 
-func NewMongoCounter(dbURL string, minumAgeOfCount time.Duration) (*mgoCounter, error) {
+func NewMongoCounter(dbURL string, minumAgeOfCount time.Duration) (core.Counter, error) {
 	msession, err := mgo.Dial(dbURL)
 	if err != nil {
 		return nil, err
