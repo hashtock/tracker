@@ -15,9 +15,7 @@ func RunWebAPI(counter core.CountReaderWritter) {
 	m := martini.Classic()
 	m.Use(render.Renderer())
 	m.Use(func(res http.ResponseWriter, req *http.Request) {
-		if false {
-			hmacAuth.ChainedHandler(res, req, nil)
-		}
+		hmacAuth.ChainedHandler(res, req, nil)
 	})
 
 	cs := counterService{counter}
