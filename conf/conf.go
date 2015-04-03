@@ -40,10 +40,10 @@ var cfg *Config
 var rcfgs RemoteConfigs
 
 const exampleConfig = `[general]
-Timeout = 60s
-UpdateTime = 5s
-SampingTime = 15m
-TagUpdateTime = 1m
+Timeout = 60s ; How long to listen for, 0 for inifinite
+UpdateTime = 5s ; How often push new counts to DB
+SampingTime = 15m ; Store counts grouped by time
+TagUpdateTime = 1m ; How often to check for new tags while listening
 DB = "mongodb://user:password@host:port/"
 
 [auth]
