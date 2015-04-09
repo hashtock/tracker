@@ -32,22 +32,48 @@ Basic use case would be to:
 
 ## Configuration
 
-Tracker expects `config.ini` file in place from where you will execute it.
-Running Trucker without config will cause it to print out examplary config, like one below:
+Tracker expects to read configuration from environment vairables.
+Running Trucker without mandatory configuration value or executing `config` command (`tracker config`) will cause it to print out help message like:
 
-```ini
-[general]
-Timeout = 60s ; How long to listen for, 0 for inifinite
-UpdateTime = 5s ; How often push new counts to DB
-SampingTime = 15m ; Store counts grouped by time
-TagUpdateTime = 1m ; How often to check for new tags while listening
-DB = "mongodb://user:password@host:port/"
+```Environmental variables used in configuration
+TRACKER_DB
+    Value: mongodb://admin:123456@1.2.3.4:27017/
+    Help: Location of MongoDB: mongodb://user:password@host:port/
 
-[auth]
-ConsumerKey = "Twitter App ConsumerKey"
-SecretKey   = "Twitter App SecretKey"
-AccessToken = "Twitter account access token"
-AccessTokenSecret = "Twitter account access token secret"
-HMACSecret = "Long Random String"
+TRACKER_TIMEOUT
+    Value: 0 (default)
+    Help: How long to listen for, 0 for inifinite
+
+TRACKER_UPDATE_TIME
+    Value: 5s (default)
+    Help: How often push new counts to DB
+
+TRACKER_SAMPING_TIME
+    Value: 15m0s (default)
+    Help: Store counts grouped by time
+
+TRACKER_TAG_UPDATE_TIME
+    Value: 10s (default)
+    Help: How often to check for new tags while listening
+
+TRACKER_CONSUMER_KEY
+    Value: not set
+    Help: Twitter App ConsumerKey
+
+TRACKER_SECRET_KEY
+    Value: not set
+    Help: Twitter App SecretKey
+
+TRACKER_ACCESS_TOKEN
+    Value: not set
+    Help: Twitter account access token
+
+TRACKER_ACCESS_TOKEN_SECRET
+    Value: not set
+    Help: Twitter account access token secret
+
+TRACKER_SECRET
+    Value: not set
+    Help: Long random string used as shared secret
 ```
 

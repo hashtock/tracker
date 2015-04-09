@@ -70,6 +70,11 @@ func App() *cli.App {
 				},
 			},
 		},
+		{
+			Name:   "config",
+			Usage:  "Shows configuration details",
+			Action: cmdPrintConfHelp,
+		},
 	}
 	return app
 }

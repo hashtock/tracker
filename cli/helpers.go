@@ -21,7 +21,7 @@ func getCounterRW(ctx *cli.Context) core.CountReaderWritter {
 		counter, err = client.NewTracker(remoteConfig)
 	} else {
 		config := conf.GetConfig()
-		counter, err = storage.NewMongoCounter(config.General.DB, config.General.SampingTimeD())
+		counter, err = storage.NewMongoCounter(config.General.DB, config.General.SampingTime)
 	}
 
 	if err != nil {
@@ -37,7 +37,7 @@ func getCounter(ctx *cli.Context) core.Counter {
 	}
 
 	config := conf.GetConfig()
-	counter, err := storage.NewMongoCounter(config.General.DB, config.General.SampingTimeD())
+	counter, err := storage.NewMongoCounter(config.General.DB, config.General.SampingTime)
 	if err != nil {
 		log.Fatalln(err)
 	}

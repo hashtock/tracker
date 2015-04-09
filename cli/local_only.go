@@ -25,11 +25,11 @@ func cmdListen(ctx *cli.Context) {
 		log.Fatalln(err)
 	}
 
-	twitterListener := listener.NewTwitterListener(tagNames, cfg.General.TimeoutD(), cfg.General.UpdateTimeD(), cfg.Auth)
+	twitterListener := listener.NewTwitterListener(tagNames, cfg.General.Timeout, cfg.General.UpdateTime, cfg.Auth)
 	countCh := twitterListener.Listen()
 
 	go func() {
-		watcher := time.NewTicker(cfg.General.TagUpdateTimeD())
+		watcher := time.NewTicker(cfg.General.TagUpdateTime)
 		defer watcher.Stop()
 
 		for {
@@ -50,7 +50,7 @@ func cmdListen(ctx *cli.Context) {
 	}()
 
 	for countMap := range countCh {
-		now := time.Now().Truncate(cfg.General.SampingTimeD())
+		now := time.Now().Truncate(cfg.General.SampingTime)
 		if ctx.GlobalBool("verbose") {
 			fmt.Printf("Time: %v\tData: %v\n", now, countMap)
 		}
@@ -75,7 +75,7 @@ func cmdListen(ctx *cli.Context) {
 func cmdWebAPI(ctx *cli.Context) {
 	counter := getCounterRW(ctx)
 	cfg := conf.GetConfig()
-	cfg.General.Timeout = "0" // No timeout
+	cfg.General.Timeout = 0 // No timeout
 	go cmdListen(ctx)
 
 	webapi.RunWebAPI(counter)
@@ -97,4 +97,8 @@ func cmdClearCounts(ctx *cli.Context) {
 		log.Println("Could not remove counts.", err)
 	}
 	fmt.Println("Done. Counts cleared tags are still in place")
+}
+
+func cmdPrintConfHelp(ctx *cli.Context) {
+	conf.PrintConfHelp()
 }
