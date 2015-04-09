@@ -35,7 +35,8 @@ Basic use case would be to:
 Tracker expects to read configuration from environment vairables.
 Running Trucker without mandatory configuration value or executing `config` command (`tracker config`) will cause it to print out help message like:
 
-```Environmental variables used in configuration
+```
+Environmental variables used in configuration
 TRACKER_DB
     Value: mongodb://admin:123456@1.2.3.4:27017/
     Help: Location of MongoDB: mongodb://user:password@host:port/
