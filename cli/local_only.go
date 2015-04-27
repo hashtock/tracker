@@ -78,7 +78,9 @@ func cmdWebAPI(ctx *cli.Context) {
 	cfg.General.Timeout = 0 // No timeout
 	go cmdListen(ctx)
 
-	webapi.RunWebAPI(counter)
+	serializer := new(webapi.WebAPISerializer)
+
+	webapi.RunWebAPI(counter, serializer)
 }
 
 func cmdClearAll(ctx *cli.Context) {

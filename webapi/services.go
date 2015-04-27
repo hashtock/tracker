@@ -3,90 +3,93 @@ package webapi
 import (
 	"net/http"
 
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/gorilla/mux"
 
 	"github.com/hashtock/tracker/core"
 )
 
 type counterService struct {
-	counter core.CountReaderWritter
+	counter    core.CountReaderWritter
+	serializer Serializer
 }
 
-func (c *counterService) allTags(r render.Render) {
+func (c *counterService) allTags(rw http.ResponseWriter, req *http.Request) {
 	tags, err := c.counter.Tags()
 	if err != nil {
-		r.Error(http.StatusInternalServerError)
+		c.serializer.JSON(rw, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	r.JSON(http.StatusOK, tags)
+	c.serializer.JSON(rw, http.StatusOK, tags)
 }
 
-func (c *counterService) addTag(res http.ResponseWriter, params martini.Params) {
-	if err := c.counter.AddTag(params["name"]); err != nil {
-		res.WriteHeader(http.StatusInternalServerError)
+func (c *counterService) addTag(rw http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+
+	if err := c.counter.AddTag(name); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
-		res.WriteHeader(http.StatusCreated)
+		rw.WriteHeader(http.StatusCreated)
 	}
 }
 
-func (c *counterService) counts(req *http.Request, r render.Render) {
+func (c *counterService) counts(rw http.ResponseWriter, req *http.Request) {
 	since, until, err := parseQuery(req.URL.Query())
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	counts, err := c.counter.Counts(since, until)
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	r.JSON(http.StatusOK, counts)
+	c.serializer.JSON(rw, http.StatusOK, counts)
 }
 
-func (c *counterService) trends(req *http.Request, r render.Render) {
+func (c *counterService) trends(rw http.ResponseWriter, req *http.Request) {
 	since, until, err := parseQuery(req.URL.Query())
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	trends, err := c.counter.Trends(since, until)
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	r.JSON(http.StatusOK, trends)
+	c.serializer.JSON(rw, http.StatusOK, trends)
 }
 
-func (c *counterService) tagTrends(req *http.Request, params martini.Params, r render.Render) {
-	tag := params["name"]
+func (c *counterService) tagTrends(rw http.ResponseWriter, req *http.Request) {
+	tag := mux.Vars(req)["name"]
+
 	if tag == "" {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, nil)
 		return
 	}
 
 	since, until, err := parseQuery(req.URL.Query())
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	sampling, err := getSamplingFromQuery(req.URL.Query())
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	trends, err := c.counter.TagTrends(tag, since, until, sampling)
 	if err != nil {
-		r.Error(http.StatusBadRequest)
+		c.serializer.JSON(rw, http.StatusNotFound, err.Error())
 		return
 	}
 
-	r.JSON(http.StatusOK, trends)
+	c.serializer.JSON(rw, http.StatusOK, trends)
 }
