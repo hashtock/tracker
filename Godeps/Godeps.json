@@ -20,9 +20,9 @@
 			"Rev": "6086d7927ec35315964d9fea46df6c04e6d697c1"
 		},
 		{
-			"ImportPath": "github.com/codegangsta/inject",
-			"Comment": "v1.0-rc1-10-g33e0aa1",
-			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Comment": "v0.1-70-gc7477ad",
+			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
 		},
 		{
 			"ImportPath": "github.com/dustin/go-jsonpointer",
@@ -37,17 +37,12 @@
 			"Rev": "0368e1982b7e5a5e4a382b7e325b88d629e17ddb"
 		},
 		{
-			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-109-g145b98f",
-			"Rev": "145b98fdfb72e5bf6d1c5d163900cd3f40e8af64"
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
 		{
-			"ImportPath": "github.com/martini-contrib/render",
-			"Rev": "b65063311fac6cbf84d3538f5715f7847e648322"
-		},
-		{
-			"ImportPath": "github.com/oxtoacart/bpool",
-			"Rev": "923fab21d0624a469b877a05bbfc562c1c26c663"
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "660d31f8602b95058fed6833debf113e85350868"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",

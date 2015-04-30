@@ -1,38 +1,31 @@
 package webapi
 
 import (
-	"net/http"
-
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
+	"github.com/codegangsta/negroni"
+	"github.com/gorilla/mux"
 
 	"github.com/hashtock/tracker/core"
 )
 
-func RunWebAPI(counter core.CountReaderWritter) {
+func RunWebAPI(counter core.CountReaderWritter, serializer Serializer) {
 	hmacAuth := newVanGoh()
 
-	m := martini.Classic()
-	m.Use(render.Renderer())
-	m.Use(func(res http.ResponseWriter, req *http.Request) {
-		hmacAuth.ChainedHandler(res, req, nil)
-	})
+	n := negroni.New(
+		negroni.NewRecovery(),
+		negroni.NewLogger(),
+		negroni.HandlerFunc(hmacAuth.ChainedHandler),
+	)
 
-	cs := counterService{counter}
+	cs := counterService{counter, serializer}
 
-	m.Group("/api", func(r martini.Router) {
-		r.Group("/tag", func(sr martini.Router) {
-			sr.Get("/", cs.allTags)
-			sr.Put("/:name/", cs.addTag)
-		})
+	r := mux.NewRouter()
+	api := r.PathPrefix("/api").Subrouter()
+	api.HandleFunc("/tag/", cs.allTags).Methods("GET")
+	api.HandleFunc("/tag/{name}/", cs.addTag).Methods("PUT")
+	api.HandleFunc("/counts/", cs.counts).Methods("GET")
+	api.HandleFunc("/trends/", cs.trends).Methods("GET")
+	api.HandleFunc("/trends/{name}/", cs.tagTrends).Methods("GET")
 
-		r.Get("/counts", cs.counts)
-
-		r.Group("/trends", func(sr martini.Router) {
-			sr.Get("/", cs.trends)
-			sr.Get("/:name/", cs.tagTrends)
-		})
-	})
-
-	m.Run()
+	n.UseHandler(r)
+	n.Run(":3001")
 }
