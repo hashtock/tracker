@@ -1,13 +1,20 @@
 package webapi
 
 import (
+	"net/http"
+
 	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
+	"github.com/gorilla/pat"
 
 	"github.com/hashtock/tracker/core"
 )
 
-func RunWebAPI(counter core.CountReaderWritter, serializer Serializer) {
+type Options struct {
+	Counter    core.CountReaderWritter
+	Serializer Serializer
+}
+
+func Handlers(options Options) http.Handler {
 	hmacAuth := newVanGoh()
 
 	n := negroni.New(
@@ -16,16 +23,16 @@ func RunWebAPI(counter core.CountReaderWritter, serializer Serializer) {
 		negroni.HandlerFunc(hmacAuth.ChainedHandler),
 	)
 
-	cs := counterService{counter, serializer}
+	cs := counterService{options.Counter, options.Serializer}
 
-	r := mux.NewRouter()
-	api := r.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/tag/", cs.allTags).Methods("GET")
-	api.HandleFunc("/tag/{name}/", cs.addTag).Methods("PUT")
-	api.HandleFunc("/counts/", cs.counts).Methods("GET")
-	api.HandleFunc("/trends/", cs.trends).Methods("GET")
-	api.HandleFunc("/trends/{name}/", cs.tagTrends).Methods("GET")
+	m := pat.New()
+	m.Get("/tag/", cs.allTags)
+	m.Put("/tag/{name}/", cs.addTag)
+	m.Get("/counts/", cs.counts)
+	m.Get("/trends/", cs.trends)
+	m.Get("/trends/{name}/", cs.tagTrends)
 
-	n.UseHandler(r)
-	n.Run(":3001")
+	n.UseHandler(m)
+
+	return n
 }

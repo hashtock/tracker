@@ -13,6 +13,7 @@ const (
 )
 
 const (
+	keyServeAddress        = "SERVE_ADDRESS"
 	keyDB                  = "DB"
 	keyTIMEOUT             = "TIMEOUT"
 	keyUPDATE_TIME         = "UPDATE_TIME"
@@ -26,6 +27,7 @@ const (
 )
 
 var cfgHelp = map[string]string{
+	keyServeAddress:        "Host and port for the service",
 	keyDB:                  "Location of MongoDB: mongodb://user:password@host:port/",
 	keyTIMEOUT:             "How long to listen for, 0 for inifinite",
 	keyUPDATE_TIME:         "How often push new counts to DB",
@@ -87,6 +89,7 @@ func loadConfig() {
 		cfg = new(Config)
 	}
 
+	cfg.General.ServeAddress = mustHaveValue(keyServeAddress)
 	cfg.General.DB = mustHaveValue(keyDB)
 	cfg.General.Timeout = getEnvOrDefaultDuration(keyTIMEOUT)
 	cfg.General.UpdateTime = getEnvOrDefaultDuration(keyUPDATE_TIME)

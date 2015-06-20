@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -73,14 +74,21 @@ func cmdListen(ctx *cli.Context) {
 }
 
 func cmdWebAPI(ctx *cli.Context) {
-	counter := getCounterRW(ctx)
 	cfg := conf.GetConfig()
 	cfg.General.Timeout = 0 // No timeout
 	go cmdListen(ctx)
 
-	serializer := new(webapi.WebAPISerializer)
+	handlerOptions := webapi.Options{
+		Serializer: new(webapi.WebAPISerializer),
+		Counter:    getCounterRW(ctx),
+	}
 
-	webapi.RunWebAPI(counter, serializer)
+	handler := webapi.Handlers(handlerOptions)
+
+	err := http.ListenAndServe(cfg.General.ServeAddress, handler)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func cmdClearAll(ctx *cli.Context) {
