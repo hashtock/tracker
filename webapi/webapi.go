@@ -5,6 +5,8 @@ import (
 
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/pat"
+	authClient "github.com/hashtock/auth/client"
+	authCore "github.com/hashtock/auth/core"
 
 	"github.com/hashtock/tracker/core"
 )
@@ -12,6 +14,7 @@ import (
 type Options struct {
 	Counter    core.CountReaderWritter
 	Serializer Serializer
+	WhoClient  authCore.Who
 }
 
 func Handlers(options Options) http.Handler {
@@ -20,8 +23,13 @@ func Handlers(options Options) http.Handler {
 	n := negroni.New(
 		negroni.NewRecovery(),
 		negroni.NewLogger(),
-		negroni.HandlerFunc(hmacAuth.ChainedHandler),
+		authClient.NewAuthMiddleware(options.WhoClient),
+		// negroni.HandlerFunc(hmacAuth.ChainedHandler),
 	)
+
+	if false {
+		n.UseFunc(hmacAuth.ChainedHandler)
+	}
 
 	cs := counterService{options.Counter, options.Serializer}
 

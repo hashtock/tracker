@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
+	authClient "github.com/hashtock/auth/client"
 
 	"github.com/hashtock/tracker/conf"
 	"github.com/hashtock/tracker/core"
@@ -78,9 +79,12 @@ func cmdWebAPI(ctx *cli.Context) {
 	cfg.General.Timeout = 0 // No timeout
 	go cmdListen(ctx)
 
+	who := authClient.NewClient("http://localhost:4000/auth/who/")
+
 	handlerOptions := webapi.Options{
 		Serializer: new(webapi.WebAPISerializer),
 		Counter:    getCounterRW(ctx),
+		WhoClient:  who,
 	}
 
 	handler := webapi.Handlers(handlerOptions)
