@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/hashtock/tracker",
-	"GoVersion": "go1.4.1",
+	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/ChimeraCoder/anaconda",
@@ -43,6 +43,18 @@
 		{
 			"ImportPath": "github.com/gorilla/mux",
 			"Rev": "660d31f8602b95058fed6833debf113e85350868"
+		},
+		{
+			"ImportPath": "github.com/gorilla/pat",
+			"Rev": "ae2e162c4b2ae96aa66b596b2c18f17834299ed0"
+		},
+		{
+			"ImportPath": "github.com/hashtock/auth/client",
+			"Rev": "ef4ed6d29204015a5e05ecfb82401c87411dce5f"
+		},
+		{
+			"ImportPath": "github.com/hashtock/auth/core",
+			"Rev": "ef4ed6d29204015a5e05ecfb82401c87411dce5f"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",
