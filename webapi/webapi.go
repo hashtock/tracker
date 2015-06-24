@@ -18,18 +18,11 @@ type Options struct {
 }
 
 func Handlers(options Options) http.Handler {
-	hmacAuth := newVanGoh()
-
 	n := negroni.New(
 		negroni.NewRecovery(),
 		negroni.NewLogger(),
 		authClient.NewAuthMiddleware(options.WhoClient),
-		// negroni.HandlerFunc(hmacAuth.ChainedHandler),
 	)
-
-	if false {
-		n.UseFunc(hmacAuth.ChainedHandler)
-	}
 
 	cs := counterService{options.Counter, options.Serializer}
 
@@ -37,8 +30,8 @@ func Handlers(options Options) http.Handler {
 	m.Get("/tag/", cs.allTags)
 	m.Put("/tag/{name}/", cs.addTag)
 	m.Get("/counts/", cs.counts)
-	m.Get("/trends/", cs.trends)
 	m.Get("/trends/{name}/", cs.tagTrends)
+	m.Get("/trends/", cs.trends)
 
 	n.UseHandler(m)
 

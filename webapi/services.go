@@ -3,8 +3,6 @@ package webapi
 import (
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"github.com/hashtock/tracker/core"
 )
 
@@ -24,7 +22,7 @@ func (c *counterService) allTags(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (c *counterService) addTag(rw http.ResponseWriter, req *http.Request) {
-	name := mux.Vars(req)["name"]
+	name := req.URL.Query().Get(":name")
 
 	if err := c.counter.AddTag(name); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -66,7 +64,7 @@ func (c *counterService) trends(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (c *counterService) tagTrends(rw http.ResponseWriter, req *http.Request) {
-	tag := mux.Vars(req)["name"]
+	tag := req.URL.Query().Get(":name")
 
 	if tag == "" {
 		c.serializer.JSON(rw, http.StatusBadRequest, nil)
