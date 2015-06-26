@@ -59,17 +59,3 @@ func getTimeRangeFromDuration(ctx *cli.Context) (since time.Time, until time.Tim
 	since = until.Add(-duration)
 	return
 }
-
-func getTags(storage core.CountReader) (tagNames []string, err error) {
-	tags, err := storage.Tags()
-	if err != nil {
-		return
-	}
-
-	tagNames = make([]string, len(tags))
-	for i, tag := range tags {
-		tagNames[i] = tag.Name
-	}
-
-	return
-}

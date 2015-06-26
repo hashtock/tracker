@@ -36,3 +36,17 @@ type Counter interface {
 	CountReaderWritter
 	CountTracker
 }
+
+func TagNames(storage CountReader) (tagNames []string, err error) {
+	tags, err := storage.Tags()
+	if err != nil {
+		return
+	}
+
+	tagNames = make([]string, len(tags))
+	for i, tag := range tags {
+		tagNames[i] = tag.Name
+	}
+
+	return
+}
