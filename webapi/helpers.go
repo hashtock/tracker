@@ -2,8 +2,12 @@ package webapi
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/gorilla/context"
+	authCore "github.com/hashtock/auth/core"
 
 	"github.com/hashtock/tracker/core"
 )
@@ -69,4 +73,18 @@ func getSamplingFromQuery(query url.Values) (sampling core.Sampling, err error) 
 	}
 
 	return core.ParseSampling(samplingStr)
+}
+
+func isAdmin(req *http.Request) error {
+	obj := context.Get(req, UserContextKey)
+	if obj == nil {
+		return errors.New("User not logged in")
+	}
+
+	user, ok := obj.(authCore.User)
+	if !ok || !user.Admin {
+		return errors.New("Admin permission needed")
+	}
+
+	return nil
 }

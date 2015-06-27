@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/hashtock/tracker/listener"
 	"log"
 	"net/http"
 
@@ -9,6 +8,7 @@ import (
 
 	"github.com/hashtock/tracker/conf"
 	"github.com/hashtock/tracker/core"
+	"github.com/hashtock/tracker/listener"
 	"github.com/hashtock/tracker/storage"
 	"github.com/hashtock/tracker/webapi"
 )

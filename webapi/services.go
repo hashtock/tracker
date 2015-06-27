@@ -6,6 +6,8 @@ import (
 	"github.com/hashtock/tracker/core"
 )
 
+const UserContextKey = "user"
+
 type counterService struct {
 	counter    core.CountReaderWritter
 	serializer Serializer
@@ -22,6 +24,11 @@ func (c *counterService) allTags(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (c *counterService) addTag(rw http.ResponseWriter, req *http.Request) {
+	if adminErr := isAdmin(req); adminErr != nil {
+		c.serializer.JSON(rw, http.StatusForbidden, adminErr.Error())
+		return
+	}
+
 	name := req.URL.Query().Get(":name")
 
 	if err := c.counter.AddTag(name); err != nil {
