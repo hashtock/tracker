@@ -15,6 +15,7 @@ type Auth struct {
 
 type General struct {
 	ServeAddress  string
+	AuthAddress   string
 	Timeout       time.Duration
 	UpdateTime    time.Duration
 	TagUpdateTime time.Duration

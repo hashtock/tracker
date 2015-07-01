@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/hashtock/auth/core"
 )
@@ -13,11 +15,22 @@ type Client struct {
 	HttpClient      *http.Client
 }
 
-func NewClient(authServiceLocation string) *Client {
-	return &Client{
-		serviceLocation: authServiceLocation,
-		HttpClient:      http.DefaultClient,
+func NewClient(authServiceLocation string) (*Client, error) {
+	serviceURL, err := url.Parse(authServiceLocation)
+	if err != nil {
+		return nil, err
 	}
+	if strings.Contains(authServiceLocation, "/who/") == false {
+		serviceURL, err = serviceURL.Parse("./who/")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Client{
+		serviceLocation: serviceURL.String(),
+		HttpClient:      http.DefaultClient,
+	}, nil
 }
 
 func (c Client) Who(req *http.Request) (*core.User, error) {

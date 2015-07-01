@@ -35,10 +35,14 @@ func main() {
 	twitterListener := listener.NewTwitterListener(tagNames, cfg.General.Timeout, cfg.General.UpdateTime, cfg.Auth)
 	go listener.Listen(twitterListener, counter, listenerOptions)
 
+	whoClient, whoErr := authClient.NewClient(cfg.General.AuthAddress)
+	if whoErr != nil {
+		log.Fatalln(err)
+	}
 	handlerOptions := webapi.Options{
 		Serializer: new(webapi.WebAPISerializer),
 		Counter:    counter,
-		WhoClient:  authClient.NewClient("http://localhost:4000/auth/who/"),
+		WhoClient:  whoClient,
 	}
 	handler := webapi.Handlers(handlerOptions)
 	err = http.ListenAndServe(cfg.General.ServeAddress, handler)
