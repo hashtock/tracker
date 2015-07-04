@@ -45,11 +45,11 @@
 		},
 		{
 			"ImportPath": "github.com/hashtock/auth/client",
-			"Rev": "f364225ce98484a96de24d6f390322354134d413"
+			"Rev": "0358ffdcf93479c535c63a14b494a74922ae51eb"
 		},
 		{
 			"ImportPath": "github.com/hashtock/auth/core",
-			"Rev": "f364225ce98484a96de24d6f390322354134d413"
+			"Rev": "0358ffdcf93479c535c63a14b494a74922ae51eb"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",

@@ -11,3 +11,7 @@ type UserSessioner interface {
 	AddUserToSession(sessionId string, user *User) error
 	DeleteSession(sessionId string) error
 }
+
+type Administrator interface {
+	MakeUserAnAdmin(email string) error
+}
