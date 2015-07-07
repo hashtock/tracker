@@ -19,16 +19,7 @@ go get github.com/hashtock/tracker
 
 ## Usage
 
-To get list of available commands run `tracker --help`
-
-Basic use case would be to:
-* Add some tags to track ```tracker add android golang mognodb```
-* Listen
-  * No web API ```tracker listen```
-  * With web API ```tracker web```
-* Lookup counts (lists only completed samples. See SampingTime value in config)
-  * Sum for time period ```tacker counts 1h```
-  * Counts over time for time period ```tacker counts_detailed 2h```
+Run `./tracker` to listen for new hashtags and serve web app
 
 ## Configuration
 
