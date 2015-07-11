@@ -21,6 +21,7 @@ type General struct {
 	TagUpdateTime time.Duration
 	SampingTime   time.Duration
 	DB            string
+	NATS          string
 }
 
 type Config struct {

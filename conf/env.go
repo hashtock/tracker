@@ -16,6 +16,7 @@ const (
 	keyServeAddress        = "SERVE_ADDRESS"
 	keyAuthAddress         = "AUTH_ADDRESS"
 	keyDB                  = "DB"
+	keyNATS                = "NATS"
 	keyTIMEOUT             = "TIMEOUT"
 	keyUPDATE_TIME         = "UPDATE_TIME"
 	keySAMPING_TIME        = "SAMPING_TIME"
@@ -40,6 +41,7 @@ var cfgHelp = map[string]string{
 	keyACCESS_TOKEN:        "Twitter account access token",
 	keyACCESS_TOKEN_SECRET: "Twitter account access token secret",
 	keySECRET:              "Long random string used as shared secret",
+	keyNATS:                "Location of NATS service: nats://host:port",
 }
 
 var defaultDurations = map[string]time.Duration{
@@ -94,6 +96,7 @@ func loadConfig() {
 	cfg.General.ServeAddress = mustHaveValue(keyServeAddress)
 	cfg.General.AuthAddress = mustHaveValue(keyAuthAddress)
 	cfg.General.DB = mustHaveValue(keyDB)
+	cfg.General.NATS = mustHaveValue(keyNATS)
 	cfg.General.Timeout = getEnvOrDefaultDuration(keyTIMEOUT)
 	cfg.General.UpdateTime = getEnvOrDefaultDuration(keyUPDATE_TIME)
 	cfg.General.SampingTime = getEnvOrDefaultDuration(keySAMPING_TIME)
@@ -147,6 +150,7 @@ func loadRemoteConfigs() {
 func PrintConfHelp() {
 	keysOrder := []string{
 		keyDB,
+		keyNATS,
 		keyTIMEOUT,
 		keyUPDATE_TIME,
 		keySAMPING_TIME,

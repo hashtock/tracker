@@ -1,6 +1,9 @@
 {
 	"ImportPath": "github.com/hashtock/tracker",
 	"GoVersion": "go1.4.2",
+	"Packages": [
+		"."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/ChimeraCoder/anaconda",
@@ -50,6 +53,11 @@
 		{
 			"ImportPath": "github.com/hashtock/auth/core",
 			"Rev": "0358ffdcf93479c535c63a14b494a74922ae51eb"
+		},
+		{
+			"ImportPath": "github.com/nats-io/nats",
+			"Comment": "v1.0.9-1-g20b0666",
+			"Rev": "20b066697dfb0705615658394a00262c1523e9e3"
 		},
 		{
 			"ImportPath": "gopkg.in/mgo.v2",

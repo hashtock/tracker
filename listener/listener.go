@@ -20,6 +20,7 @@ type Options struct {
 	SampingTime   time.Duration
 	Verbose       bool
 	ExitSignal    chan struct{}
+	Notificator   core.DataNotificator
 }
 
 func Listen(tagListener Listener, counter core.Counter, options Options) {
@@ -46,12 +47,20 @@ func Listen(tagListener Listener, counter core.Counter, options Options) {
 		}
 	}()
 
+	lastNotification := time.Time{}
 	for countMap := range countCh {
 		now := time.Now().Truncate(options.SampingTime)
 		if options.Verbose {
 			log.Printf("Time: %v\tData: %v\n", now, countMap)
 		}
 		tc := make([]core.TagCount, 0, len(countMap))
+
+		if lastNotification != now && options.Notificator != nil {
+			if lastNotification.IsZero() == false {
+				go options.Notificator.DataAvailable(lastNotification, now)
+			}
+			lastNotification = now
+		}
 
 		for tagName, count := range countMap {
 			tc = append(tc, core.TagCount{
