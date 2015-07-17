@@ -96,5 +96,5 @@ func (c *counterService) tagTrends(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	c.serializer.JSON(rw, http.StatusOK, trends)
+	c.serializer.JSON(rw, http.StatusOK, trends.Counts)
 }
