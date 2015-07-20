@@ -67,7 +67,12 @@ func (c *counterService) trends(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	c.serializer.JSON(rw, http.StatusOK, trends)
+	mapped := make(map[string][]core.Count, len(trends))
+	for _, trend := range trends {
+		mapped[trend.Name] = trend.Counts
+	}
+
+	c.serializer.JSON(rw, http.StatusOK, mapped)
 }
 
 func (c *counterService) tagTrends(rw http.ResponseWriter, req *http.Request) {
