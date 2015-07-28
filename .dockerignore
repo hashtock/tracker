@@ -1,0 +1,12 @@
+Dockerfile
+.dockerignore
+.git
+
+Godeps/_workspace/bin/
+Godeps/_workspace/pkg/
+
+tracker
+gin-bin
+*.sh
+*.ini
+*.js
