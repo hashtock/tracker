@@ -7,7 +7,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/ChimeraCoder/anaconda",
-			"Rev": "964821c05001e5a38dd234d681ce9a929858481a"
+			"Rev": "8ce9921eae6a70c5679a746a9f2736f6be587fa9"
 		},
 		{
 			"ImportPath": "github.com/ChimeraCoder/tokenbucket",

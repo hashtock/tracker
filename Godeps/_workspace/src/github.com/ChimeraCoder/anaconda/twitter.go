@@ -18,7 +18,7 @@
 //Executing queries on an authenticated TwitterApi struct is simple.
 //
 //  searchResult, _ := api.GetSearch("golang", nil)
-//  for _ , tweet := range searchResult {
+//  for _ , tweet := range searchResult.Statuses {
 //      fmt.Print(tweet.Text)
 //  }
 //
@@ -52,10 +52,11 @@ import (
 )
 
 const (
-	_GET      = iota
-	_POST     = iota
-	BaseUrlV1 = "https://api.twitter.com/1"
-	BaseUrl   = "https://api.twitter.com/1.1"
+	_GET          = iota
+	_POST         = iota
+	BaseUrlV1     = "https://api.twitter.com/1"
+	BaseUrl       = "https://api.twitter.com/1.1"
+	UploadBaseUrl = "https://upload.twitter.com/1.1"
 )
 
 var oauthClient = oauth.Client{
@@ -72,6 +73,7 @@ type TwitterApi struct {
 	HttpClient           *http.Client
 
 	// Currently used only for the streaming API
+	// and for checking rate-limiting headers
 	// Default logger is silent
 	Log Logger
 }
@@ -248,6 +250,8 @@ func (c *TwitterApi) throttledQuery() {
 		if err != nil {
 			if apiErr, ok := err.(*ApiError); ok {
 				if isRateLimitError, nextWindow := apiErr.RateLimitCheck(); isRateLimitError && !c.returnRateLimitError {
+					c.Log.Info(apiErr.Error())
+
 					// If this is a rate-limiting error, re-add the job to the queue
 					// TODO it really should preserve order
 					go func() {
