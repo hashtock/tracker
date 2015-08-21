@@ -4,7 +4,8 @@ FROM alpine:3.2
 ENV GOROOT=/usr/lib/go \
     GOPATH=/gopath \
     GOBIN=/gopath/bin \
-    PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+    PATH=$PATH:$GOROOT/bin:$GOPATH/bin \
+    TRACKER_SERVE_ADDRESS=:80
 
 WORKDIR /gopath/src/github.com/hashtock/tracker
 ADD . /gopath/src/github.com/hashtock/tracker
