@@ -20,22 +20,22 @@ func main() {
 
 	nc, err := nats.Connect(cfg.General.NATS)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 	msgConnection, err := nats.NewEncodedConn(nc, "json")
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 	defer msgConnection.Close()
 
 	counter, err := storage.NewMongoCounter(cfg.General.DB, cfg.General.SampingTime)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 
 	tagNames, err := core.TagNames(counter)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 
 	noticiator := NewMsgNoticiator(counter, msgConnection)
@@ -50,7 +50,7 @@ func main() {
 
 	whoClient, whoErr := authClient.NewClient(cfg.General.AuthAddress)
 	if whoErr != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 	handlerOptions := webapi.Options{
 		Serializer: new(webapi.WebAPISerializer),
@@ -60,6 +60,6 @@ func main() {
 	handler := webapi.Handlers(handlerOptions)
 	err = http.ListenAndServe(cfg.General.ServeAddress, handler)
 	if err != nil {
-		log.Fatalln(err)
+		log.Panicln(err)
 	}
 }
