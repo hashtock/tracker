@@ -17,4 +17,6 @@ RUN apk add -U git go && \
     rm -rf /gopath && \
     rm -rf /var/cache/apk/*
 
+EXPOSE 80
+
 CMD "tracker"
